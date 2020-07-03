@@ -20,7 +20,7 @@ def build(bld):
     headers = bld(features='ns3header')
     headers.module = 'clustering'
     headers.source = [
-        'model/clustering-position.h'
+        'model/clustering-position.h',
         ]
 
     if bld.env.ENABLE_EXAMPLES:

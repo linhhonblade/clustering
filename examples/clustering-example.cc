@@ -3,7 +3,11 @@
 #include "ns3/core-module.h"
 #include "ns3/clustering-position.h"
 #include "ns3/node-container.h"
+#include "ns3/packet.h"
 #include "ns3/node.h"
+#include "ns3/simulator.h"
+// #include "ns3/clustering-header.h"
+// #include "ns3/clustering-utils.h"
 
 using namespace ns3;
 
@@ -20,6 +24,7 @@ main (int argc, char *argv[])
 
   /* ... */
 
+  // Test position
   PosInfo posInfo = PosInfo ("position_3_1_10_600_50_3.txt");
   NodeContainer nodes = posInfo.GetNodeContainer (3, 7.0);
   std::cout << nodes.GetN() << std::endl;
