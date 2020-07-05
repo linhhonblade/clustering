@@ -470,4 +470,96 @@ ClusteringDataHeader::Deserialize (Buffer::Iterator start)
   return GetSerializedSize ();
 }
 
+/////////////////////////////////////////////////////////////////////
+
+
+// NS_OBJECT_ENSURE_REGISTERED (ClusteringNeighborListHeader);
+
+// ClusteringNeighborListHeader::ClusteringNeighborListHeader () : m_seq (0)
+// {
+//   NS_LOG_FUNCTION (this);
+// }
+
+// ClusteringNeighborListHeader::~ClusteringNeighborListHeader ()
+// {
+//   NS_LOG_FUNCTION (this);
+// }
+
+// uint64_t
+// ClusteringNeighborListHeader::GetSeq (void) const
+// {
+//   NS_LOG_FUNCTION (this);
+//   return m_seq;
+// }
+
+// void
+// ClusteringNeighborListHeader::SetNeighborList (std::map<uint64_t, ClusteringUtils::NeighborInfo> neighborList)
+// {
+//   NS_LOG_FUNCTION (this);
+//   m_neighborList = neighborList;
+// }
+
+// std::map<uint64_t, ClusteringUtils::NeighborInfo>
+// ClusteringNeighborListHeader::GetNeighborList (void)
+// {
+//   NS_LOG_FUNCTION (this);
+//   return m_neighborList;
+// }
+
+// TypeId
+// ClusteringNeighborListHeader::GetTypeId (void)
+// {
+//   static TypeId tid = TypeId ("ns3::ClusteringNeighborListHeader")
+//                           .SetParent<Header> ()
+//                           .AddConstructor<ClusteringNeighborListHeader> ();
+//   return tid;
+// }
+
+// TypeId
+// ClusteringNeighborListHeader::GetInstanceTypeId (void) const
+// {
+//   return GetTypeId ();
+// }
+
+// void
+// ClusteringNeighborListHeader::Print (std::ostream &os) const
+// {
+//   NS_LOG_FUNCTION (this << &os);
+//   os << "(seq=" << m_seq << " Numbers of nodes in neighbor list=" << m_neighborList.size() << ")";
+// }
+
+// uint32_t
+// ClusteringNeighborListHeader::GetSerializedSize (void) const
+// {
+//   NS_LOG_FUNCTION (this);
+//   return sizeof (uint64_t) + sizeof (std::map<uint64_t, ClusteringUtils::NeighborInfo>);
+// }
+
+// void
+// ClusteringDataHeader::Serialize (Buffer::Iterator start) const
+// {
+//   NS_LOG_FUNCTION (this << &start);
+
+//   Buffer::Iterator i = start;
+//   i.WriteHtonU64 (m_ts);
+
+//   // Write DataInfo structure
+
+// }
+
+// uint32_t
+// ClusteringDataHeader::Deserialize (Buffer::Iterator start)
+// {
+//   NS_LOG_INFO (this << &start);
+
+//   Buffer::Iterator i = start;
+//   m_ts = i.ReadNtohU64 ();
+
+//   m_dataInfo.CID = i.ReadNtohU64 ();
+//   m_dataInfo.dataType = static_cast<ClusteringUtils::DataType> (i.ReadNtohU16 ());
+
+//   return GetSerializedSize ();
+// }
+
+
 } // namespace ns3

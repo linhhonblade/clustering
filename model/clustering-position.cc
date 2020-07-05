@@ -103,5 +103,25 @@ NodeContainer PosInfo::GetNodeContainer (uint32_t lanes, double lane_width, uint
   return nodes;
 }
 
+NodeContainer PosInfo::GetNodeContainer (uint32_t lanes, double lane_width, uint32_t nodeNum, const std::string& mobilityModel)
+{
+  NodeContainer nodes = NodeContainer();
+  nodes.Create(nodeNum);
+  MobilityHelper mobility;
+  Ptr<ListPositionAllocator> positionAlloc = CreateObject<ListPositionAllocator> ();
+  for (std::vector<double>::iterator it = PosList.begin(); (it != PosList.end()) || (it - PosList.begin() < nodeNum); ++it) {
+    positionAlloc->Add (Vector (*it, lane_width * ((it - PosList.begin()) % lanes), 0.0));
+  }
+  mobility.SetPositionAllocator (positionAlloc);
+  //mobility.SetMobilityModel("ns3::ConstantPositionMobilityModel");
+  //mobility.SetMobilityModel("ns3::ConstantVelocityMobilityModel");
+  mobility.SetMobilityModel(mobilityModel);
+  mobility.Install (nodes);
+  // for (uint i = 0; i < nodes.GetN (); i++) {
+  //   Ptr<ConstantVelocityMobilityModel> mob = nodes.Get(i)->GetObject<ConstantVelocityMobilityModel>();
+  //   mob->SetVelocity (Vector (22.0, 0.0, 0.0));
+  // }
+  return nodes;
+}
 }
 

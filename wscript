@@ -12,6 +12,8 @@ def build(bld):
         'model/clustering-position.cc',
         'model/clustering-header.cc',
         'model/clustering-utils.cc',
+        'model/clustering-client.cc',
+        'helper/clustering-client-helper.cc'
         ]
 
     module_test = bld.create_ns3_module_test_library('clustering')
@@ -25,6 +27,8 @@ def build(bld):
         'model/clustering-position.h',
         'model/clustering-header.h',
         'model/clustering-utils.h',
+        'model/clustering-client.h',
+        'helper/clustering-client-helper.h'
         ]
 
     if bld.env.ENABLE_EXAMPLES:

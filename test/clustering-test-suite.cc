@@ -13,6 +13,15 @@
 using namespace ns3;
 
 // This is an example TestCase.
+
+class ClusteringClientTestCase : public TestCase
+{
+  public:
+    ClusteringClientTestCase ();
+    virtual ~ClusteringClientTestCase ();
+  private:
+    virtual void DoRun (void);
+};
 class ClusteringPositionTestCase : public TestCase
 {
 public:
@@ -61,6 +70,12 @@ class ClusteringDataHeaderTestCase : public TestCase
 
 
 // Add some help text to this case to describe what it is intended to test
+
+ClusteringClientTestCase::ClusteringClientTestCase ()
+  : TestCase ("Dunno what to check yet")
+{
+}
+
 ClusteringPositionTestCase::ClusteringPositionTestCase ()
   : TestCase ("Check reading from txt file")
 {
@@ -82,11 +97,17 @@ ClusteringDataHeaderTestCase::ClusteringDataHeaderTestCase ()
   : TestCase("Check V2vClusterInfoHeader class serialization-deserialization")
 {}
 
+ClusteringClientTestCase::~ClusteringClientTestCase () {}
 ClusteringPositionTestCase::~ClusteringPositionTestCase () {}
 ClusteringBeaconHeaderTestCase::~ClusteringBeaconHeaderTestCase () {}
 ClusteringRsuBeaconHeaderTestCase::~ClusteringRsuBeaconHeaderTestCase () {}
 ClusteringFormClusterHeaderTestCase::~ClusteringFormClusterHeaderTestCase () {}
 ClusteringDataHeaderTestCase::~ClusteringDataHeaderTestCase () {}
+
+void ClusteringClientTestCase::DoRun(void) {
+  Simulator::Run();
+  Simulator::Destroy();
+}
 
 void ClusteringPositionTestCase::DoRun(void) {
 
@@ -128,6 +149,7 @@ ClusteringTestSuite::ClusteringTestSuite ()
   : TestSuite ("clustering", UNIT)
 {
   // TestDuration for TestCase can be QUICK, EXTENSIVE or TAKES_FOREVER
+  AddTestCase (new ClusteringClientTestCase, TestCase::QUICK);
   AddTestCase (new ClusteringPositionTestCase, TestCase::QUICK);
   AddTestCase (new ClusteringBeaconHeaderTestCase, TestCase::QUICK);
   AddTestCase (new ClusteringRsuBeaconHeaderTestCase, TestCase::QUICK);

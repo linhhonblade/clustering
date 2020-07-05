@@ -28,55 +28,48 @@
 
 namespace ns3 {
 
-class ClusteringUtils {
+class ClusteringUtils
+{
 
 public:
-    virtual ~ClusteringUtils ();
+  virtual ~ClusteringUtils ();
 
-    enum NodeState{
-        STANDALONE = 0,
-        CH,
-        CM,
-        NODE_STATES
-    };
+  enum NodeState { STANDALONE = 0, CH, CM, NODE_STATES };
 
-    struct NeighborInfo {
-        int64_t ts;
-        uint64_t nodeId;
-        uint64_t CID;
-        double positionX;
-        double positionY;
-        double positionZ;
-        double velocityX;
-        double velocityY;
-        double velocityZ;
-        NodeState state;
-    };
+  enum DataType { EMERGENCY_EVENT = 0, NOTIFICATION_EVENT, DATA_TYPES };
 
-    struct RsuInfo {
-      int64_t ts;
-      uint64_t nodeId;
-      double positionX;
-      double positionY;
-      double positionZ;
-    };
+  struct NeighborInfo
+  {
+    int64_t ts;
+    uint64_t nodeId;
+    uint64_t CID;
+    double positionX;
+    double positionY;
+    double positionZ;
+    double velocityX;
+    double velocityY;
+    double velocityZ;
+    NodeState state;
+  };
 
-    enum DataType{
-        EMERGENCY_EVENT = 0,
-        NOTIFICATION_EVENT,
-        INCIDENT_TYPES
-    };
+  struct RsuInfo
+  {
+    int64_t ts;
+    uint64_t nodeId;
+    double positionX;
+    double positionY;
+    double positionZ;
+  };
 
-    struct DataInfo{
-        int64_t CID;
-        DataType dataType;
-    };
+  struct DataInfo
+  {
+    int64_t CID;
+    DataType dataType;
+  };
 
 private:
-
 };
 
 } // namespace ns3
 
 #endif // CLUSTERING_UTILS_H
-

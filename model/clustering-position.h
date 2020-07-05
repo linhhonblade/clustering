@@ -24,6 +24,7 @@ class PosInfo {
     NodeContainer GetNodeContainer (void);
     NodeContainer GetNodeContainer (uint32_t lanes, double lane_width);
     NodeContainer GetNodeContainer (uint32_t lanes, double lane_width, uint32_t nodeNum);
+    NodeContainer GetNodeContainer (uint32_t lanes, double lane_width, uint32_t nodeNum, const std::string& mobilityModel);
 };
 
 }

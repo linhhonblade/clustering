@@ -229,6 +229,36 @@ private:
   ClusteringUtils::DataInfo m_dataInfo; //!< Incident Information
 };
 
+/**
+ * \ingroup clustering
+ * \class ClusteringNeighborListHeader
+ * \brief Packet header for neighbor list exchange
+ *
+ * The header is made of a 64bits timestamp followed by
+ * an IncidentInfo structure
+ */
+// class ClusteringNeighborListHeader : public Header
+// {
+// public:
+//   ClusteringNeighborListHeader ();
+//   virtual ~ClusteringNeighborListHeader ();
+//   void SetSeq (uint64_t seq);
+//   uint64_t GetSeq (void) const;
+//   void SetNeighborList (std::map<uint64_t, ClusteringUtils::NeighborInfo>);
+//   std::map<uint64_t, ClusteringUtils::NeighborInfo> GetNeighborList (void);
+
+//   static TypeId GetTypeId (void);
+//   virtual TypeId GetInstanceTypeId (void) const;
+//   virtual void Print (std::ostream &os) const;
+//   virtual uint32_t GetSerializedSize (void) const;
+//   virtual void Serialize (Buffer::Iterator start) const;
+//   virtual uint32_t Deserialize (Buffer::Iterator start);
+
+// private:
+//   uint64_t m_seq;
+//   std::map<uint64_t, ClusteringUtils::NeighborInfo> m_neighborList;
+// };
+
 } // namespace ns3
 
 #endif // CLUSTERING_HEADER_H
