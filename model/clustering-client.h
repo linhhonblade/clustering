@@ -44,6 +44,7 @@ public:
         NEIGHBOR_LIST_EXCHANGE,
         CLUSTER_FORMATION,
         DATA_EXCHANGE,
+        SET_UP,
         CURRENT_PROCESS
 	};
 
@@ -77,6 +78,9 @@ private:
     void UpdateCurrentMobilityInfo (void);
     void StatusReport (void);
     void AppReport (std::ostream &os);
+    void ScheduleTransmit (Time dt);
+    void ResetCycleTime (void);
+    void ScheduleUpdateProcess (void);
 
     enum MyProcess m_process;
 

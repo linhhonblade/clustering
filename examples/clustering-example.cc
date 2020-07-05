@@ -80,7 +80,7 @@ main (int argc, char *argv[])
   /*----------------------------------------------------------------------*/
 
   /*---------------------- Simulation Default Values ---------------------*/
-  double simTime = 1.0;
+  double simTime = 60.0;
   uint16_t numberOfVehicles = 10;
   uint16_t numberOfRsu = 1;
   std::string posfile = "position_3_1_10_600_50_3.txt";

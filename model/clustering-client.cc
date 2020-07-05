@@ -71,8 +71,9 @@ NS_OBJECT_ENSURE_REGISTERED (ClusteringVClient);
 TypeId
 ClusteringVClient::GetTypeId (void)
 {
-  static TypeId tid = TypeId ("ns3::ClusteringVClient").SetParent<Application> ()
-    .AddConstructor<ClusteringVClient> ();
+  static TypeId tid = TypeId ("ns3::ClusteringVClient")
+                          .SetParent<Application> ()
+                          .AddConstructor<ClusteringVClient> ();
   return tid;
 }
 
@@ -133,10 +134,76 @@ void
 ClusteringVClient::StartApplication (void)
 {
   NS_LOG_FUNCTION (this);
-  m_process = ClusteringVClient::BEACON_EXCHANGE;
+  m_process = SET_UP;
   std::cout << "Application starts" << std::endl;
-  UpdateCurrentMobilityInfo ();
-  UpdateProcess ();
+  ScheduleUpdateProcess ();
+  ScheduleTransmit (Seconds (0.0));
+}
+
+void
+ClusteringVClient::ScheduleUpdateProcess (void)
+{
+  Time now = Simulator::Now ();
+  switch (m_process)
+  {
+    case BEACON_EXCHANGE:
+    {
+      std::cout << "At " << now.GetSeconds() << ": switch from BEACON_EXCHANGE to NEIGHBOR_LIST_EXCHANGE" << std::endl;
+      Simulator::Cancel (m_eventBeaconExchange);
+      m_process = ClusteringVClient::NEIGHBOR_LIST_EXCHANGE;
+      Simulator::Schedule (Seconds (1.0), &ClusteringVClient::ScheduleUpdateProcess, this);
+      break;
+    }
+    case NEIGHBOR_LIST_EXCHANGE:
+    {
+      std::cout << "At " << now.GetSeconds() << ": switch from NEIGHBOR_LIST_EXCHANGE to CLUSTER_FORMATION" << std::endl;
+      Simulator::Cancel (m_eventNeighborExchange);
+      m_process = CLUSTER_FORMATION;
+      Simulator::Schedule (Seconds (2.0), &ClusteringVClient::ScheduleUpdateProcess, this);
+      break;
+    }
+    case CLUSTER_FORMATION:
+    {
+      std::cout << "At " << now.GetSeconds() << ": switch from CLUSTER_FORMATION to DATA_EXCHANGE" << std::endl;
+      Simulator::Cancel (m_eventElection);
+      m_process = DATA_EXCHANGE;
+      Simulator::Schedule (Seconds (30.0), &ClusteringVClient::ScheduleUpdateProcess, this);
+      break;
+    }
+    case DATA_EXCHANGE:
+    {
+      std::cout << "At " << now.GetSeconds() << ": switch from DATA_EXCHANGE to BEACON_EXCHANGE" << std::endl;
+      Simulator::Cancel (m_eventSendData);
+      ResetCycleTime ();
+      m_process = BEACON_EXCHANGE;
+      Simulator::Schedule (Seconds (1.0), &ClusteringVClient::ScheduleUpdateProcess, this);
+      break;
+    }
+    case SET_UP:
+    {
+      std::cout << "At " << now.GetSeconds() << ": switch from SET_UP to BEACON_EXCHANGE" << std::endl;
+      m_process = BEACON_EXCHANGE;
+      Simulator::Schedule (Seconds (1.0), &ClusteringVClient::ScheduleUpdateProcess, this);
+      break;
+    }
+    default:
+      std::cout << "This line shouldn't be shown" << std::endl;
+      break;
+
+  }
+
+}
+
+void
+ClusteringVClient::ResetCycleTime ()
+{
+  std::cout << "This is ResetCycleTime function" << std::endl;
+}
+
+void
+ClusteringVClient::ScheduleTransmit (Time dt)
+{
+  std::cout << "This is Schedule Transmit" << std::endl;
 }
 
 void
@@ -168,15 +235,12 @@ ClusteringVClient::UpdateCurrentMobilityInfo (void)
   m_currentMobilityInfo.nodeId = this->GetNode ()->GetId ();
 
   // Position and Velocity
-  Vector p = this->GetNode ()->GetObject<ConstantPositionMobilityModel>()
-  ->GetPosition();
+  Vector p = this->GetNode ()->GetObject<ConstantPositionMobilityModel> ()->GetPosition ();
   m_currentMobilityInfo.positionX = p.x;
   m_currentMobilityInfo.positionY = p.y;
   m_currentMobilityInfo.positionZ = p.z;
 
-  p = this->GetNode ()
-  ->GetObject<ConstantPositionMobilityModel> ()
-  ->GetVelocity ();
+  p = this->GetNode ()->GetObject<ConstantPositionMobilityModel> ()->GetVelocity ();
   m_currentMobilityInfo.velocityX = p.x;
   m_currentMobilityInfo.velocityY = p.y;
   m_currentMobilityInfo.velocityZ = p.z;
@@ -225,9 +289,4 @@ ClusteringVClient::StatusReport (void)
     }
 }
 
-void
-ClusteringVClient::UpdateProcess (void)
-{
-    std::cout << "This is update process" << std::endl;
-}
 } // Namespace ns3
