@@ -22,7 +22,7 @@ followed by
 in the the root directory of the ns-3 simulator. The files built will be copied in the build/ directory.
 
 
-### Run the v2v example
+### Run the clustering example
 type the command
 
 `./waf --run clustering-example`
