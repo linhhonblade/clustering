@@ -31,6 +31,7 @@
 #include "ns3/traced-callback.h"
 #include "ns3/clustering-utils.h"
 #include "ns3/clustering-header.h"
+#include "ns3/wave-net-device.h"
 
 namespace ns3 {
 
@@ -55,6 +56,7 @@ public:
     static TypeId GetTypeId (void);
 
 	ClusteringVClient();
+    ClusteringVClient(uint32_t deltaT);
     virtual ~ClusteringVClient ();
 
 protected:
@@ -74,7 +76,7 @@ private:
     void QuitElection (void);
     void EndElection (void);
     void SendData (void);
-    void HandleRead (void);
+    bool HandleRead (Ptr<NetDevice> dev, Ptr<const Packet> pkt, uint16_t mode, const Address &sender);
     void UpdateCurrentMobilityInfo (void);
     void StatusReport (void);
     void AppReport (std::ostream &os);
@@ -82,6 +84,11 @@ private:
     void ResetCycleTime (void);
     void ScheduleUpdateProcess (void);
     void Send (void);
+    void StartListening (void);
+    bool CheckOutOfTransmission (ClusteringUtils::NeighborInfo a, ClusteringUtils::NeighborInfo b);
+    Vector GetVelocityVector (ClusteringUtils::NeighborInfo mobilityInfo);
+    Vector GetPositionVector (ClusteringUtils::RsuInfo rsuInfo);
+    Vector GetPositionVector (ClusteringUtils::NeighborInfo mobilityInfo);
 
     enum MyProcess m_process;
 
@@ -101,7 +108,10 @@ private:
     uint32_t m_sentCounter; 	//!< Counter for sent packets
     uint32_t m_formationCounter; //!< Counter for sent cluster formation
     uint32_t m_cycleCounter;     //!< Countere for cycle number
+    uint32_t m_deltaT;
 
+    ClusteringUtils m_utils;
+    Ptr<WaveNetDevice> m_device;
 
 
 };

@@ -81,9 +81,9 @@ main (int argc, char *argv[])
 
   /*---------------------- Simulation Default Values ---------------------*/
   double simTime = 60.0;
-  uint16_t numberOfVehicles = 10;
+  uint16_t numberOfVehicles = 3;
   uint16_t numberOfRsu = 1;
-  std::string posfile = "position_3_1_10_600_50_3.txt";
+  std::string posfile = "position.txt";
   std::string vMobilityModel = "ns3::ConstantPositionMobilityModel";
   /*----------------------------------------------------------------------*/
 
@@ -111,8 +111,8 @@ main (int argc, char *argv[])
 
   // Create  vNodes
   PosInfo posInfo = PosInfo (posfile);
-  NodeContainer vNodes = posInfo.GetNodeContainer (3, 7.0, 3, vMobilityModel);
-  NodeContainer rsuNodes = posInfo.GetNodeContainer (1, 0.0, 1, vMobilityModel);
+  NodeContainer vNodes = posInfo.GetNodeContainer (3, 4.0, numberOfVehicles, vMobilityModel);
+  NodeContainer rsuNodes = posInfo.GetNodeContainer (1, 0.0, numberOfRsu, vMobilityModel);
 
   // Setup MAC and PHY layer
   YansWifiChannelHelper waveChannel = YansWifiChannelHelper::Default ();
