@@ -8,12 +8,12 @@ clustering implements a clustering algorithm in our internship
 *The code is tested in 3.30 version of ns-3 simulator*
 
 
-### Build v2v
+### Build clustering
 Copy and paste the clustering package under src/ folder of the ns-3 simulator.
 
 type the command
 
-`./waf configure --enable-examples`
+`./waf configure --enable-examples --enable-modules=clustering`
 
 followed by
 
