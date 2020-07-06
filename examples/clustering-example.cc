@@ -26,53 +26,53 @@ main (int argc, char *argv[])
 
   /* ... */
 
-  // Test position
-  PosInfo posInfo = PosInfo ("position_3_1_10_600_50_3.txt");
-  NodeContainer nodes = posInfo.GetNodeContainer (3, 7.0);
-  std::cout << nodes.GetN () << std::endl;
+  // // Test position
+  // PosInfo posInfo = PosInfo ("position_3_1_10_600_50_3.txt");
+  // NodeContainer nodes = posInfo.GetNodeContainer (3, 7.0);
+  // std::cout << nodes.GetN () << std::endl;
 
-  // Test headers
+  // // Test headers
 
-  Packet::EnablePrinting ();
-  ClusteringBeaconHeader beaconHeader;
-  ClusteringRsuBeaconHeader rsuBeaconHeader;
-  ClusteringFormClusterHeader formClusterHeader;
-  ClusteringDataHeader dataHeader;
+  // Packet::EnablePrinting ();
+  // ClusteringBeaconHeader beaconHeader;
+  // ClusteringRsuBeaconHeader rsuBeaconHeader;
+  // ClusteringFormClusterHeader formClusterHeader;
+  // ClusteringDataHeader dataHeader;
 
-  ClusteringUtils::NeighborInfo mobilityInfo{
-      Simulator::Now ().GetTimeStep (), 2, 3, 1.0, 0.0, 1.0, 0.0, 0.0, 0.0,
-      ClusteringUtils::NodeState::CM};
+  // ClusteringUtils::NeighborInfo mobilityInfo{
+  //     Simulator::Now ().GetTimeStep (), 2, 0, 1.0, 0.0, 1.0, 0.0, 0.0, 0.0,
+  //     ClusteringUtils::NodeState::CM};
 
-  ClusteringUtils::RsuInfo rsuInfo{Simulator::Now ().GetTimeStep (), 1, 2.2, 134.2, 1.0};
+  // ClusteringUtils::RsuInfo rsuInfo{Simulator::Now ().GetTimeStep (), 1, 2.2, 134.2, 1.0};
 
-  beaconHeader.SetMobilityInfo (mobilityInfo);
-  Ptr<Packet> p = Create<Packet> ();
+  // beaconHeader.SetMobilityInfo (mobilityInfo);
+  // Ptr<Packet> p = Create<Packet> ();
 
-  p->AddHeader (beaconHeader);
-  std::cout << "This is Beacon Packet" << std::endl;
-  p->Print (std::cout);
-  std::cout << std::endl;
-  std::cout << "Data retrieved from the header is" << std::endl;
-  ClusteringBeaconHeader rcvBeacon;
-  p->RemoveHeader (rcvBeacon);
-  rcvBeacon.Print (std::cout);
+  // p->AddHeader (beaconHeader);
+  // std::cout << "This is Beacon Packet" << std::endl;
+  // p->Print (std::cout);
+  // std::cout << std::endl;
+  // std::cout << "Data retrieved from the header is" << std::endl;
+  // ClusteringBeaconHeader rcvBeacon;
+  // p->RemoveHeader (rcvBeacon);
+  // rcvBeacon.Print (std::cout);
 
-  rsuBeaconHeader.SetRsuInfo (rsuInfo);
-  p->AddHeader (rsuBeaconHeader);
-  std::cout << "This is Rsu Beacon Packet" << std::endl;
-  p->Print (std::cout);
-  std::cout << std::endl;
-  std::cout << "Data retrieved from the header is" << std::endl;
-  ClusteringRsuBeaconHeader rcvRsuBeacon;
-  p->RemoveHeader (rcvRsuBeacon);
-  rcvRsuBeacon.Print (std::cout);
-  std::cout << std::endl;
+  // rsuBeaconHeader.SetRsuInfo (rsuInfo);
+  // p->AddHeader (rsuBeaconHeader);
+  // std::cout << "This is Rsu Beacon Packet" << std::endl;
+  // p->Print (std::cout);
+  // std::cout << std::endl;
+  // std::cout << "Data retrieved from the header is" << std::endl;
+  // ClusteringRsuBeaconHeader rcvRsuBeacon;
+  // p->RemoveHeader (rcvRsuBeacon);
+  // rcvRsuBeacon.Print (std::cout);
+  // std::cout << std::endl;
 
   // Test Application
   /*--------------------- Logging System Configuration -------------------*/
-  // LogLevel logLevel = (LogLevel) (LOG_PREFIX_ALL | LOG_LEVEL_WARN);
-  // LogComponentEnable ("ClusteringExample", logLevel);
-  // LogComponentEnable ("ClusteringClient", logLevel);
+  LogLevel logLevel = (LogLevel) (LOG_INFO);
+  LogComponentEnable ("ClusteringExample", logLevel);
+  LogComponentEnable ("ClusteringClient", logLevel);
 
   NS_LOG_INFO ("/------------------------------------------------\\");
   NS_LOG_INFO (" - ClusteringExample [Example] -> Cluster vehicles communication");
@@ -110,7 +110,7 @@ main (int argc, char *argv[])
   /*----------------------------------------------------------------------*/
 
   // Create  vNodes
-  posInfo = PosInfo (posfile);
+  PosInfo posInfo = PosInfo (posfile);
   NodeContainer vNodes = posInfo.GetNodeContainer (3, 7.0, 3, vMobilityModel);
   NodeContainer rsuNodes = posInfo.GetNodeContainer (1, 0.0, 1, vMobilityModel);
 

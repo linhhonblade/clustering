@@ -81,6 +81,7 @@ private:
     void ScheduleTransmit (Time dt);
     void ResetCycleTime (void);
     void ScheduleUpdateProcess (void);
+    void Send (void);
 
     enum MyProcess m_process;
 
@@ -89,6 +90,7 @@ private:
     EventId m_eventNeighborExchange;
     EventId m_eventDataExchange;
     EventId m_eventSendData;
+    EventId m_sendEvent;
 
     std::map<uint64_t, ClusteringUtils::NeighborInfo> m_clusterList;
     std::map<uint64_t, ClusteringUtils::NeighborInfo> m_neighborList;
