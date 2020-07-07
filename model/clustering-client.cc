@@ -98,6 +98,8 @@ ClusteringVClient::ClusteringVClient ()
   m_utils = ClusteringUtils ();
 
   m_deltaT = 30;
+  m_neighborList = std::map<uint64_t, ClusteringUtils::NeighborInfo> ();
+  m_clusterList = std::map<uint64_t, ClusteringUtils::NeighborInfo> ();
 }
 
 ClusteringVClient::ClusteringVClient (uint32_t deltaT)
@@ -118,6 +120,8 @@ ClusteringVClient::ClusteringVClient (uint32_t deltaT)
   m_utils = ClusteringUtils ();
 
   m_deltaT = deltaT;
+  m_neighborList = std::map<uint64_t, ClusteringUtils::NeighborInfo> ();
+  m_clusterList = std::map<uint64_t, ClusteringUtils::NeighborInfo> ();
 }
 
 ClusteringVClient::~ClusteringVClient ()
@@ -133,6 +137,8 @@ ClusteringVClient::~ClusteringVClient ()
   m_sentCounter = 0;
   m_formationCounter = 0;
   m_cycleCounter = 0;
+  m_neighborList = std::map<uint64_t, ClusteringUtils::NeighborInfo> ();
+  m_clusterList = std::map<uint64_t, ClusteringUtils::NeighborInfo> ();
 }
 
 void
@@ -160,18 +166,18 @@ ClusteringVClient::DoDispose (void)
 void
 ClusteringVClient::StartApplication (void)
 {
+  Packet::EnablePrinting ();
   NS_LOG_FUNCTION (this);
   m_process = SET_UP;
-  const TxProfile txProfile = TxProfile (SCH1);
-  const SchInfo schInfo = SchInfo (SCH1, false, EXTENDED_ALTERNATING);
+  const SchInfo schInfo = SchInfo (SCH1, false, EXTENDED_CONTINUOUS);
   std::cout << "Application starts" << std::endl;
   m_device = DynamicCast<WaveNetDevice> (Application::GetNode ()->GetDevice (0));
+  StartListening ();
   m_device->StartSch (schInfo);
-  m_device->RegisterTxProfile(txProfile);
   UpdateCurrentMobilityInfo ();
   ScheduleUpdateProcess ();
-  StartListening ();
-  ScheduleTransmit (Seconds (0.0));
+
+  ScheduleTransmit (Seconds (0.0 + 0.01*m_currentMobilityInfo.nodeId));
 }
 
 void
@@ -256,13 +262,24 @@ ClusteringVClient::ScheduleTransmit (Time dt)
 {
   NS_LOG_FUNCTION (this << dt);
   // std::cout << "This is Schedule Transmit" << std::endl;
-  if (Application::GetNode ()->GetId () == 0)
-    {
-      m_sendEvent = Simulator::Schedule (dt, &ClusteringVClient::Send, this);
-      NS_LOG_DEBUG ("[ScheduleTransmit] => NodeId:" << m_currentMobilityInfo.nodeId
-                                                    << " EventInfo:" << m_sendEvent.GetTs ()
-                                                    << " process: " << ToString (m_process));
-    }
+  // if (Application::GetNode ()->GetId () == 0)
+  //   {
+  //     m_sendEvent = Simulator::Schedule (dt, &ClusteringVClient::Send, this);
+  //     NS_LOG_DEBUG ("[ScheduleTransmit] => NodeId:" << m_currentMobilityInfo.nodeId
+  //                                                   << " EventInfo:" << m_sendEvent.GetTs ()
+  //                                                   << " process: " << ToString (m_process));
+  //   }
+  // else if (Application::GetNode()->GetId() == 1)
+  //   {
+  //     m_sendEvent = Simulator::Schedule (dt, &ClusteringVClient::Send, this);
+  //     NS_LOG_DEBUG ("[ScheduleTransmit] => NodeId:" << m_currentMobilityInfo.nodeId
+  //                                                   << " EventInfo:" << m_sendEvent.GetTs ()
+  //                                                   << " process: " << ToString (m_process));
+  //   }
+  m_sendEvent = Simulator::Schedule (dt, &ClusteringVClient::Send, this);
+  NS_LOG_DEBUG ("[ScheduleTransmit] => NodeId:" << m_currentMobilityInfo.nodeId
+                                                << " EventInfo:" << m_sendEvent.GetTs ()
+                                                << " process: " << ToString (m_process));
 }
 
 void
@@ -282,12 +299,15 @@ ClusteringVClient::Send (void)
         vBeaconHeader.SetMobilityInfo (m_currentMobilityInfo);
         Ptr<Packet> packet = Create<Packet> (0);
         packet->AddHeader (vBeaconHeader);
+        const TxProfile txProfile = TxProfile (SCH1);
+        m_device->RegisterTxProfile (txProfile);
         if (m_device->Send (packet, dest, 0))
           {
             ++m_sentCounter;
+            m_device->DeleteTxProfile (SCH1);
             NS_LOG_INFO ("[Send] BEACON_EXCHANGE => At time "
-                         << Simulator::Now ().GetSeconds () << "s node"
-                         << m_currentMobilityInfo.nodeId << "sent " << packet->GetSize ()
+                         << Simulator::Now ().GetSeconds () << "s node "
+                         << m_currentMobilityInfo.nodeId << " sent " << packet->GetSize ()
                          << " bytes to " << dest);
           }
 
@@ -311,7 +331,6 @@ ClusteringVClient::Send (void)
       NS_LOG_DEBUG ("[Send] Default Case");
       break;
     }
-
 }
 
 void
@@ -323,7 +342,7 @@ ClusteringVClient::StopApplication (void) // Called at time specified by Stop
   Simulator::Cancel (m_eventNeighborExchange);
   Simulator::Cancel (m_eventElection);
   Simulator::Cancel (m_eventDataExchange);
-  m_device->DeleteTxProfile(SCH1);
+  m_device->DeleteTxProfile (SCH1);
   m_device->StopSch (SCH1);
   std::cout << "Application stops" << std::endl;
   StatusReport ();
@@ -336,10 +355,11 @@ ClusteringVClient::HandleRead (Ptr<NetDevice> dev, Ptr<const Packet> pkt, uint16
 {
   NS_LOG_FUNCTION (this << dev);
   Ptr<Packet> p = pkt->Copy ();
-  std::cout << "This is handle read function" << std::endl;
+  std::cout << "This is handle read function from node " << m_currentMobilityInfo.nodeId
+            << std::endl;
   if (pkt->GetSize () == 0)
     {
-      ;
+      NS_LOG_INFO ("hello");
     }
   else
     {
@@ -356,14 +376,14 @@ ClusteringVClient::HandleRead (Ptr<NetDevice> dev, Ptr<const Packet> pkt, uint16
               UpdateCurrentMobilityInfo ();
               std::map<uint64_t, ClusteringUtils::NeighborInfo>::iterator itr =
                   m_neighborList.find (otherMobilityInfo.nodeId);
+
               if (CheckOutOfTransmission (m_currentMobilityInfo,
                                           rcvVBeaconHeader.GetMobilityInfo ()))
                 {
-                  ;
                 }
               else
                 {
-                  if (itr == m_neighborList.end ())
+                  if (itr == m_neighborList.end())
                     {
                       NS_LOG_INFO ("[Handle Read] Node: " << m_currentMobilityInfo.nodeId
                                                           << " Insert packet: "
@@ -418,7 +438,7 @@ ClusteringVClient::UpdateCurrentMobilityInfo (void)
 
   //!< Acquire current mobility stats
   m_currentMobilityInfo.ts = Simulator::Now ().GetTimeStep ();
-  m_currentMobilityInfo.nodeId = this->GetNode ()->GetId ();
+  m_currentMobilityInfo.nodeId = Application::GetNode ()->GetId ();
 
   // Position and Velocity
   Vector p = this->GetNode ()->GetObject<ConstantPositionMobilityModel> ()->GetPosition ();
