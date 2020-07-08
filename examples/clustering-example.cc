@@ -80,10 +80,11 @@ main (int argc, char *argv[])
   /*----------------------------------------------------------------------*/
 
   /*---------------------- Simulation Default Values ---------------------*/
-  double simTime = 60.0;
+  double simTime = 10.0;
   uint16_t numberOfVehicles = 3;
   uint16_t numberOfRsu = 1;
-  std::string posfile = "position.txt";
+  std::string vPosfile = "position_v.txt";
+  std::string rsuPosfile = "position_rsu.txt";
   std::string vMobilityModel = "ns3::ConstantPositionMobilityModel";
   /*----------------------------------------------------------------------*/
 
@@ -94,7 +95,8 @@ main (int argc, char *argv[])
   cmd.AddValue ("simTime", "Simulation Time in Seconds", simTime);
   cmd.AddValue ("numberOfVehicles", "Number of Vehicles in simulation", numberOfVehicles);
   cmd.AddValue ("numberOfRsu", "Number of Rsu in simulation", numberOfRsu);
-  cmd.AddValue ("posfile", "name of txt file containing positions of nodes", posfile);
+  cmd.AddValue ("vPosfile", "name of txt file containing positions of vNodes", vPosfile);
+  cmd.AddValue ("rsuPosfile", "name of txt file containing position of rsuNodes", rsuPosfile);
 
   NS_LOG_INFO ("");
   NS_LOG_INFO ("|---"
@@ -105,13 +107,16 @@ main (int argc, char *argv[])
   NS_LOG_INFO ("|---"
                << " NumberOfRsu -> " << numberOfRsu << " ---|\n");
   NS_LOG_INFO ("|---"
-               << " posfile -> " << posfile << " ---|\n");
-
+               << " vPosfile -> " << vPosfile << " ---|\n");
+  NS_LOG_INFO ("|---"
+               << " rsuPosfile -> " << rsuPosfile << " ---|\n");
   /*----------------------------------------------------------------------*/
 
   // Create  vNodes
-  PosInfo posInfo = PosInfo (posfile);
+  PosInfo posInfo = PosInfo (vPosfile);
   NodeContainer vNodes = posInfo.GetNodeContainer (3, 4.0, numberOfVehicles, vMobilityModel);
+  // Create rsuNodes
+  posInfo = PosInfo (rsuPosfile);
   NodeContainer rsuNodes = posInfo.GetNodeContainer (1, 0.0, numberOfRsu, vMobilityModel);
 
   // Setup MAC and PHY layer
@@ -125,17 +130,23 @@ main (int argc, char *argv[])
   NetDeviceContainer rsuDevices = waveHelper.Install (wavePhy, waveMac, rsuNodes);
 
   ApplicationContainer vApps;
-  //ApplicationContainer rsuApps;
+  ApplicationContainer rsuApps;
 
   for (uint32_t u = 0; u < vNodes.GetN (); ++u)
     {
-
       ClusteringVClientHelper vClient;
       vApps.Add (vClient.Install (vNodes.Get (u)));
+    }
+  for (uint32_t t = 0; t < rsuNodes.GetN (); ++t)
+    {
+      ClusteringRsuClientHelper rsuClient;
+      rsuApps.Add (rsuClient.Install (rsuNodes.Get (t)));
     }
 
   vApps.Start (Seconds (0.1));
   vApps.Stop (Seconds (simTime - 0.1));
+  rsuApps.Start (Seconds (0.1));
+  rsuApps.Stop (Seconds (simTime - 0.1));
 
   /*---------------------- Simulation Stopping Time ----------------------*/
   Simulator::Stop (Seconds (simTime));

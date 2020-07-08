@@ -87,6 +87,60 @@ private:
   ObjectFactory m_factory;
 };
 
+class ClusteringRsuClientHelper
+{
+public:
+  ClusteringRsuClientHelper ();
+
+  /**
+	 * Helper function used to set the underlying application attributes.
+	 *
+	 * \param name the name of the application attribute to set
+	 * \param value the value of the application attribute to set
+	 */
+  void SetAttribute (std::string name, const AttributeValue &value);
+
+  /**
+	 * Install an ns3::ClusteringClient on each node of the input container
+	 * configured with all the attributes set with SetAttribute.
+	 *
+	 * \param c NodeContainer of the set of nodes on which an ClusteringClient
+	 * will be installed.
+	 * \returns Container of Ptr to the applications installed.
+	 */
+  ApplicationContainer Install (NodeContainer c) const;
+
+  /**
+	 * Install an ns3::ClusteringClient on the node configured with all the
+	 * attributes set with SetAttribute.
+	 *
+	 * \param node The node on which an ClusteringClient will be installed.
+	 * \returns Container of Ptr to the applications installed.
+	 */
+  ApplicationContainer Install (Ptr<Node> node) const;
+
+  /**
+	 * Install an ns3::ClusteringClient on the node configured with all the
+	 * attributes set with SetAttribute.
+	 *
+	 * \param nodeName The node on which an ClusteringClient will be installed.
+	 * \returns Container of Ptr to the applications installed.
+	 */
+  ApplicationContainer Install (std::string nodeName) const;
+
+private:
+  /**
+	 * Install an ns3::ClusteringClient on the node configured with all the
+	 * attributes set with SetAttribute.
+	 *
+	 * \param node The node on which an ClusteringClient will be installed.
+	 * \returns Ptr to the application installed.
+	 */
+  Ptr<Application> InstallPriv (Ptr<Node> node) const;
+
+  ObjectFactory m_factory;
+};
+
 } // namespace ns3
 
 #endif /* CLUSTERING_CLIENT_HELPER */
