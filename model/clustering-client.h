@@ -155,6 +155,10 @@ private:
   void StatusReport (void);
   void ScheduleUpdateProcess (void);
   void ResetCycleTime (void);
+  bool CheckOutOfTransmission (ClusteringUtils::RsuInfo rsuInfo, ClusteringUtils::NeighborInfo mobilityInfo);
+  Vector GetVelocityVector (ClusteringUtils::NeighborInfo mobilityInfo);
+  Vector GetPositionVector (ClusteringUtils::RsuInfo rsuInfo);
+  Vector GetPositionVector (ClusteringUtils::NeighborInfo mobilityInfo);
 
   std::map<uint64_t, ClusteringUtils::NeighborInfo> m_neighborList;
   std::map<uint64_t, ClusteringUtils::NeighborInfo> m_clusterList;
@@ -162,10 +166,12 @@ private:
   EventId m_sendEvent;
   Ptr<WaveNetDevice> m_device;
   enum MyProcess m_process;
+  double m_deltaT;
 
   uint32_t m_sentCounter;
 
 };
+
 
 } // namespace ns3
 

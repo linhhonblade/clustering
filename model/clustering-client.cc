@@ -206,9 +206,10 @@ ClusteringVClient::ScheduleUpdateProcess (void)
         m_process = CLUSTER_FORMATION;
         Simulator::Schedule (Seconds (2.0), &ClusteringVClient::ScheduleUpdateProcess, this);
         m_waitingTime = GetTwait ();
-        NS_LOG_INFO ("[FORM_CLUSTER] START ELECTION => At time " << Simulator::Now().GetSeconds() << " s node " << m_currentMobilityInfo.nodeId
-                                                            << " has waiting time " << m_waitingTime
-                                                            << "s");
+        NS_LOG_INFO ("[FORM_CLUSTER] START ELECTION => At time "
+                     << Simulator::Now ().GetSeconds () << " s node "
+                     << m_currentMobilityInfo.nodeId << " has waiting time " << m_waitingTime
+                     << "s");
 
         ScheduleTransmit (Seconds (m_waitingTime));
         break;
@@ -255,8 +256,8 @@ ClusteringVClient::ScheduleTransmit (Time dt)
   NS_LOG_FUNCTION (this << dt);
   m_sendEvent = Simulator::Schedule (dt, &ClusteringVClient::Send, this);
   NS_LOG_DEBUG ("[Schedule Transmit] => NodeId:" << m_currentMobilityInfo.nodeId
-                                                << " EventInfo:" << m_sendEvent.GetTs ()
-                                                << " process: " << ToString (m_process));
+                                                 << " EventInfo:" << m_sendEvent.GetTs ()
+                                                 << " process: " << ToString (m_process));
 }
 
 void
@@ -645,6 +646,7 @@ ClusteringRsuClient::ClusteringRsuClient ()
   m_sentCounter = 0;
   m_neighborList = std::map<uint64_t, ClusteringUtils::NeighborInfo> ();
   m_clusterList = std::map<uint64_t, ClusteringUtils::NeighborInfo> ();
+  m_deltaT = 30.0;
 }
 
 ClusteringRsuClient::~ClusteringRsuClient ()
@@ -754,8 +756,96 @@ bool
 ClusteringRsuClient::HandleRead (Ptr<NetDevice> dev, Ptr<const Packet> pkt, uint16_t mode,
                                  const Address &sender)
 {
-  NS_LOG_INFO ("[Handle Read] from Rsu node");
+  Ptr<Packet> p = pkt->Copy ();
+  if (pkt->GetSize () == 0)
+    {
+    }
+  else
+    {
+      PacketMetadata::ItemIterator metaDataIterator = p->BeginItem ();
+      PacketMetadata::Item item;
+      while (metaDataIterator.HasNext ())
+        {
+          item = metaDataIterator.Next ();
+          if (item.tid.GetName () == "ns3::ClusteringBeaconHeader")
+            {
+              ClusteringBeaconHeader rcvVBeaconHeader;
+              p->RemoveHeader (rcvVBeaconHeader);
+              ClusteringUtils::NeighborInfo otherMobilityInfo = rcvVBeaconHeader.GetMobilityInfo ();
+              std::map<uint64_t, ClusteringUtils::NeighborInfo>::iterator itr =
+                  m_neighborList.find (otherMobilityInfo.nodeId);
+
+              if (itr == m_neighborList.end ())
+                {
+                  if (CheckOutOfTransmission (m_rsuInfo, rcvVBeaconHeader.GetMobilityInfo ()))
+                    {
+                    }
+                  else
+                    {
+                      NS_LOG_INFO ("[Handle Read] RSU Node: " << m_rsuInfo.nodeId
+                                                              << " Insert packet: "
+                                                              << otherMobilityInfo.nodeId);
+                      m_neighborList.insert ({otherMobilityInfo.nodeId, otherMobilityInfo});
+                    }
+                }
+              else
+                {
+                  NS_LOG_INFO ("[Handle Read] At time "
+                               << Simulator::Now ().GetSeconds () << "s RSU Node "
+                               << m_rsuInfo.nodeId << " update node " << otherMobilityInfo.nodeId
+                               << " in neighbor list");
+                  itr->second = otherMobilityInfo;
+                }
+            }
+          else if (item.tid.GetName () == "ns3::ClusteringRsuBeaconHeader")
+            {
+              NS_LOG_DEBUG ("[Handle Read] RSU node receive RSUBeaconHeader");
+            }
+          else if (item.tid.GetName () == "ns3::ClusteringFormClusterHeader")
+            {
+              ClusteringFormClusterHeader formClusterHeader;
+              p->RemoveHeader (formClusterHeader);
+              ClusteringUtils::NeighborInfo otherMobilityInfo =
+                  formClusterHeader.GetMobilityInfo ();
+              std::map<uint64_t, ClusteringUtils::NeighborInfo>::iterator itr =
+                  m_neighborList.find (otherMobilityInfo.nodeId);
+              if (itr == m_neighborList.end ())
+                {
+                  if (CheckOutOfTransmission (m_rsuInfo, formClusterHeader.GetMobilityInfo ()))
+                    {
+                    }
+                  else
+                    {
+                      NS_LOG_INFO ("[Handle Read] RSU Node: " << m_rsuInfo.nodeId
+                                                              << " Insert packet: "
+                                                              << otherMobilityInfo.nodeId);
+                      m_neighborList.insert ({otherMobilityInfo.nodeId, otherMobilityInfo});
+                    }
+                }
+              else
+                {
+                  NS_LOG_INFO ("[Handle Read] At time "
+                               << Simulator::Now ().GetSeconds () << "s RSU Node "
+                               << m_rsuInfo.nodeId << " update node " << otherMobilityInfo.nodeId
+                               << " in neighbor list");
+                  itr->second = otherMobilityInfo;
+                }
+            }
+          else if (item.tid.GetName () == "ns3::ClusteringDataHeader")
+            {
+              ;
+            }
+        }
+    }
   return true;
+}
+
+bool
+ClusteringRsuClient::CheckOutOfTransmission (ClusteringUtils::RsuInfo rsuInfo, ClusteringUtils::NeighborInfo mobilityInfo)
+{
+  Vector pRsu = GetPositionVector (rsuInfo);
+  Vector pV = GetPositionVector (mobilityInfo) + Vector (mobilityInfo.velocityX * m_deltaT, mobilityInfo.velocityY * m_deltaT, mobilityInfo.velocityZ * m_deltaT);
+  return ((pRsu-pV).GetLength() > 250.0);
 }
 
 void
@@ -875,6 +965,25 @@ ClusteringRsuClient::ResetCycleTime (void)
   std::cout << "This is ResetCycleTime function" << std::endl;
   m_clusterList.clear ();
   m_neighborList.clear ();
+}
+
+
+Vector
+ClusteringRsuClient::GetVelocityVector (ClusteringUtils::NeighborInfo mobilityInfo)
+{
+  return Vector (mobilityInfo.velocityX, mobilityInfo.velocityY, mobilityInfo.velocityZ);
+}
+
+Vector
+ClusteringRsuClient::GetPositionVector (ClusteringUtils::NeighborInfo mobilityInfo)
+{
+  return Vector (mobilityInfo.positionX, mobilityInfo.positionY, mobilityInfo.positionZ);
+}
+
+Vector
+ClusteringRsuClient::GetPositionVector (ClusteringUtils::RsuInfo rsuInfo)
+{
+  return Vector (rsuInfo.positionX, rsuInfo.positionY, rsuInfo.positionZ);
 }
 
 } // namespace ns3
