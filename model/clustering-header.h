@@ -181,7 +181,17 @@ public:
 
 private:
   uint64_t m_seq; //!< Sequence number
-  ClusteringUtils::NeighborInfo m_mobilityInfo; //!< Mobile Info
+  //   ClusteringUtils::NeighborInfo m_mobilityInfo; //!< Mobile Info
+  int64_t m_ts;
+  uint64_t m_nodeId;
+  uint64_t m_CID;
+  double m_positionX;
+  double m_positionY;
+  double m_positionZ;
+  double m_velocityX;
+  double m_velocityY;
+  double m_velocityZ;
+  ClusteringUtils::NodeState m_state;
 };
 
 /**
