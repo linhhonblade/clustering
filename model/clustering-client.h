@@ -60,7 +60,7 @@ public:
   static TypeId GetTypeId (void);
 
   ClusteringVClient ();
-  ClusteringVClient (uint32_t deltaT);
+  ClusteringVClient (uint32_t deltaT, double tWaitMax);
   virtual ~ClusteringVClient ();
 
 protected:
@@ -71,15 +71,6 @@ private:
   virtual void StartApplication (void); // Called at time specified by Start
   virtual void StopApplication (void); // Called at time specified by Stop
 
-  void UpdateProcess (void);
-  void StartBeaconExchange (void);
-  void EndBeaconExchange (void);
-  void StartNeighborListExchange (void);
-  void EndNeighborListExchange (void);
-  void StartElection (void);
-  void QuitElection (void);
-  void EndElection (void);
-  void SendData (void);
   bool HandleRead (Ptr<NetDevice> dev, Ptr<const Packet> pkt, uint16_t mode, const Address &sender);
   void UpdateCurrentMobilityInfo (void);
   void StatusReport (void);
@@ -93,15 +84,15 @@ private:
   Vector GetVelocityVector (ClusteringUtils::NeighborInfo mobilityInfo);
   Vector GetPositionVector (ClusteringUtils::RsuInfo rsuInfo);
   Vector GetPositionVector (ClusteringUtils::NeighborInfo mobilityInfo);
+  double GetConnectivityIndex (void);
+  double GetTwait (void);
+  void FormCluster (void);
 
   enum MyProcess m_process;
 
   EventId m_eventElection;
-  EventId m_eventBeaconExchange;
-  EventId m_eventNeighborExchange;
-  EventId m_eventDataExchange;
-  EventId m_eventSendData;
   EventId m_sendEvent;
+  bool m_inElection;
 
   std::map<uint64_t, ClusteringUtils::NeighborInfo> m_clusterList;
   std::map<uint64_t, ClusteringUtils::NeighborInfo> m_neighborList;
@@ -113,9 +104,12 @@ private:
   uint32_t m_formationCounter; //!< Counter for sent cluster formation
   uint32_t m_cycleCounter; //!< Countere for cycle number
   uint32_t m_deltaT;
+  double m_waitingTime;
+  double m_tWaitMax;
 
   ClusteringUtils m_utils;
   Ptr<WaveNetDevice> m_device;
+
 };
 
 /*------------------------------------------------------------------

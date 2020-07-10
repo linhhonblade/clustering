@@ -59,34 +59,24 @@ ClusteringBeaconHeader::SetMobilityInfo (ClusteringUtils::NeighborInfo mobilityI
 {
   NS_LOG_FUNCTION (this << mobilityInfo.nodeId);
   m_ts = mobilityInfo.ts;
-    m_nodeId = mobilityInfo.nodeId;
-    m_CID = mobilityInfo.CID;
-    m_positionX = mobilityInfo.positionX;
-    m_positionY = mobilityInfo.positionY;
-    m_positionZ = mobilityInfo.positionZ;
-    m_velocityX = mobilityInfo.velocityX;
-    m_velocityY = mobilityInfo.velocityY;
-    m_velocityZ = mobilityInfo.velocityZ;
-    m_state = mobilityInfo.state;
+  m_nodeId = mobilityInfo.nodeId;
+  m_CID = mobilityInfo.CID;
+  m_positionX = mobilityInfo.positionX;
+  m_positionY = mobilityInfo.positionY;
+  m_positionZ = mobilityInfo.positionZ;
+  m_velocityX = mobilityInfo.velocityX;
+  m_velocityY = mobilityInfo.velocityY;
+  m_velocityZ = mobilityInfo.velocityZ;
+  m_state = mobilityInfo.state;
 }
 
 ClusteringUtils::NeighborInfo
 ClusteringBeaconHeader::GetMobilityInfo (void)
 {
   NS_LOG_FUNCTION (this);
-  ClusteringUtils::NeighborInfo mobilityInfo
-  {
-    m_ts,
-    m_nodeId,
-    m_CID,
-    m_positionX,
-    m_positionY,
-    m_positionZ,
-    m_velocityX,
-    m_velocityY,
-    m_velocityZ,
-    m_state
-  };
+  ClusteringUtils::NeighborInfo mobilityInfo{m_ts,        m_nodeId,    m_CID,       m_positionX,
+                                             m_positionY, m_positionZ, m_velocityX, m_velocityY,
+                                             m_velocityZ, m_state};
   return mobilityInfo;
 }
 
@@ -295,14 +285,24 @@ void
 ClusteringFormClusterHeader::SetMobilityInfo (ClusteringUtils::NeighborInfo mobilityInfo)
 {
   NS_LOG_FUNCTION (this << mobilityInfo.nodeId);
-  m_mobilityInfo = mobilityInfo;
+  m_ts = mobilityInfo.ts;
+  m_nodeId = mobilityInfo.nodeId;
+  m_CID = mobilityInfo.CID;
+  m_positionX = mobilityInfo.positionX;
+  m_positionY = mobilityInfo.positionY;
+  m_positionZ = mobilityInfo.positionZ;
+  m_velocityX = mobilityInfo.velocityX;
+  m_velocityY = mobilityInfo.velocityY;
+  m_velocityZ = mobilityInfo.velocityZ;
+  m_state = mobilityInfo.state;
 }
 
 ClusteringUtils::NeighborInfo
 ClusteringFormClusterHeader::GetMobilityInfo (void)
 {
   NS_LOG_FUNCTION (this);
-  return m_mobilityInfo;
+  ClusteringUtils::NeighborInfo mobilityInfo = {m_ts, m_nodeId, m_CID, m_positionX, m_positionY, m_positionZ, m_velocityX, m_velocityY, m_velocityZ, m_state};
+  return mobilityInfo;
 }
 
 TypeId
@@ -324,11 +324,10 @@ void
 ClusteringFormClusterHeader::Print (std::ostream &os) const
 {
   NS_LOG_FUNCTION (this << &os);
-  os << "(seq=" << m_seq << "NodeId=" << m_mobilityInfo.nodeId << "ClusterId=" << m_mobilityInfo.CID
-     << "NodeState=" << m_mobilityInfo.state << "Position={" << m_mobilityInfo.positionX << ","
-     << m_mobilityInfo.positionY << "," << m_mobilityInfo.positionZ << "} Velocity={"
-     << m_mobilityInfo.velocityX << "," << m_mobilityInfo.velocityY << ","
-     << m_mobilityInfo.velocityZ << "})";
+  os << "(seq=" << m_seq << "Ts=" << m_ts << "NodeId=" << m_nodeId << "ClusterId=" << m_CID
+     << "NodeState=" << m_state << "Position={" << m_positionX << "," << m_positionY << ","
+     << m_positionZ << "} Velocity={" << m_velocityX << "," << m_velocityY << "," << m_velocityZ
+     << "})";
 }
 
 uint32_t
@@ -345,17 +344,18 @@ ClusteringFormClusterHeader::Serialize (Buffer::Iterator start) const
 
   Buffer::Iterator i = start;
   i.WriteHtonU64 (m_seq);
+
   // Write mobility structure
-  i.WriteHtonU64 (m_mobilityInfo.ts);
-  i.WriteHtonU64 (m_mobilityInfo.nodeId);
-  i.WriteHtonU64 (m_mobilityInfo.CID);
-  i.WriteHtonU64 (m_mobilityInfo.positionX);
-  i.WriteHtonU64 (m_mobilityInfo.positionY);
-  i.WriteHtonU64 (m_mobilityInfo.positionZ);
-  i.WriteHtonU64 (m_mobilityInfo.velocityX);
-  i.WriteHtonU64 (m_mobilityInfo.velocityY);
-  i.WriteHtonU64 (m_mobilityInfo.velocityZ);
-  i.WriteHtonU16 (m_mobilityInfo.state);
+  i.WriteHtonU64 (m_ts);
+  i.WriteHtonU64 (m_nodeId);
+  i.WriteHtonU64 (m_CID);
+  i.WriteHtonU64 (m_positionX);
+  i.WriteHtonU64 (m_positionY);
+  i.WriteHtonU64 (m_positionZ);
+  i.WriteHtonU64 (m_velocityX);
+  i.WriteHtonU64 (m_velocityY);
+  i.WriteHtonU64 (m_velocityZ);
+  i.WriteHtonU16 (m_state);
 }
 
 uint32_t
@@ -365,16 +365,16 @@ ClusteringFormClusterHeader::Deserialize (Buffer::Iterator start)
 
   Buffer::Iterator i = start;
   m_seq = i.ReadNtohU64 ();
-  m_mobilityInfo.ts = i.ReadNtohU64 ();
-  m_mobilityInfo.nodeId = i.ReadNtohU64 ();
-  m_mobilityInfo.CID = i.ReadNtohU64 ();
-  m_mobilityInfo.positionX = i.ReadNtohU64 ();
-  m_mobilityInfo.positionY = i.ReadNtohU64 ();
-  m_mobilityInfo.positionZ = i.ReadNtohU64 ();
-  m_mobilityInfo.velocityX = i.ReadNtohU64 ();
-  m_mobilityInfo.velocityY = i.ReadNtohU64 ();
-  m_mobilityInfo.velocityZ = i.ReadNtohU64 ();
-  m_mobilityInfo.state = static_cast<ClusteringUtils::NodeState> (i.ReadLsbtohU16 ());
+  m_ts = i.ReadNtohU64 ();
+  m_nodeId = i.ReadNtohU64 ();
+  m_CID = i.ReadNtohU64 ();
+  m_positionX = i.ReadNtohU64 ();
+  m_positionY = i.ReadNtohU64 ();
+  m_positionZ = i.ReadNtohU64 ();
+  m_velocityX = i.ReadNtohU64 ();
+  m_velocityY = i.ReadNtohU64 ();
+  m_velocityZ = i.ReadNtohU64 ();
+  m_state = static_cast<ClusteringUtils::NodeState> (i.ReadNtohU16 ());
 
   return GetSerializedSize ();
 }
@@ -472,7 +472,6 @@ ClusteringDataHeader::Deserialize (Buffer::Iterator start)
 
 /////////////////////////////////////////////////////////////////////
 
-
 // NS_OBJECT_ENSURE_REGISTERED (ClusteringNeighborListHeader);
 
 // ClusteringNeighborListHeader::ClusteringNeighborListHeader () : m_seq (0)
@@ -560,6 +559,5 @@ ClusteringDataHeader::Deserialize (Buffer::Iterator start)
 
 //   return GetSerializedSize ();
 // }
-
 
 } // namespace ns3
