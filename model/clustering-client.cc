@@ -671,6 +671,7 @@ ClusteringRsuClient::ClusteringRsuClient ()
   m_sentCounter = 0;
   m_neighborList = std::map<uint64_t, ClusteringUtils::NeighborInfo> ();
   m_clusterList = std::map<uint64_t, ClusteringUtils::NeighborInfo> ();
+  m_addressList = std::map<uint64_t, Mac48Address> ();
   m_deltaT = 30.0;
 }
 
@@ -681,6 +682,7 @@ ClusteringRsuClient::~ClusteringRsuClient ()
   m_sentCounter = 0;
   m_neighborList = std::map<uint64_t, ClusteringUtils::NeighborInfo> ();
   m_clusterList = std::map<uint64_t, ClusteringUtils::NeighborInfo> ();
+  m_addressList = std::map<uint64_t, Mac48Address> ();
 }
 
 void
@@ -821,6 +823,20 @@ ClusteringRsuClient::HandleRead (Ptr<NetDevice> dev, Ptr<const Packet> pkt, uint
                                << " in neighbor list");
                   itr->second = otherMobilityInfo;
                 }
+
+              // insert to address list
+              std::map<uint64_t, Mac48Address>::iterator it =
+                  m_addressList.find (otherMobilityInfo.nodeId);
+              if (it == m_addressList.end ())
+                {
+                  AddressValue addressVal = AddressValue (sender);
+                  std::string macStr = addressVal.SerializeToString (MakeAddressChecker ());
+                  Mac48Address macAddress = Mac48Address (macStr.c_str ());
+                  m_addressList.insert ({otherMobilityInfo.nodeId, macAddress});
+                  NS_LOG_INFO ("[Handle Read] Node: "
+                               << m_rsuInfo.nodeId << " added address of node "
+                               << otherMobilityInfo.nodeId << " into address list");
+                }
             }
           else if (item.tid.GetName () == "ns3::ClusteringRsuBeaconHeader")
             {
@@ -922,6 +938,13 @@ ClusteringRsuClient::StatusReport (void)
                                 << " Position:(" << node.positionX << "," << node.positionY << ","
                                 << node.positionZ << ") Velocity" << node.velocityX << ","
                                 << node.velocityY << "," << node.velocityZ << ")");
+    }
+  NS_LOG_UNCOND ("-----------------------------  Address List  ---------------------------------");
+  for (std::map<uint64_t, Mac48Address>::iterator it = m_addressList.begin ();
+       it != m_addressList.end (); ++it)
+    {
+      uint64_t id = it->first;
+      NS_LOG_UNCOND (" * key: " << id << " address: " << it->second);
     }
 }
 

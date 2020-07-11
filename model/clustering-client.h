@@ -163,6 +163,7 @@ private:
 
   std::map<uint64_t, ClusteringUtils::NeighborInfo> m_neighborList;
   std::map<uint64_t, ClusteringUtils::NeighborInfo> m_clusterList;
+  std::map<uint64_t, Mac48Address> m_addressList;
   ClusteringUtils::RsuInfo m_rsuInfo;
   EventId m_sendEvent;
   Ptr<WaveNetDevice> m_device;
