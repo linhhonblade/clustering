@@ -96,6 +96,7 @@ private:
 
   std::map<uint64_t, ClusteringUtils::NeighborInfo> m_clusterList;
   std::map<uint64_t, ClusteringUtils::NeighborInfo> m_neighborList;
+  std::map<uint64_t, Mac48Address> m_addressList;
   ClusteringUtils::NeighborInfo m_currentMobilityInfo;
   Address m_peerIncident;
   ClusteringUtils::RsuInfo m_closestRsuInfo;

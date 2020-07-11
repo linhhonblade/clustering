@@ -104,6 +104,7 @@ ClusteringVClient::ClusteringVClient ()
   m_waitingTime = INFINITY;
   m_neighborList = std::map<uint64_t, ClusteringUtils::NeighborInfo> ();
   m_clusterList = std::map<uint64_t, ClusteringUtils::NeighborInfo> ();
+  m_addressList = std::map<uint64_t, Mac48Address> ();
 }
 
 ClusteringVClient::ClusteringVClient (uint32_t deltaT, double tWaitMax)
@@ -122,6 +123,7 @@ ClusteringVClient::ClusteringVClient (uint32_t deltaT, double tWaitMax)
   m_waitingTime = INFINITY;
   m_neighborList = std::map<uint64_t, ClusteringUtils::NeighborInfo> ();
   m_clusterList = std::map<uint64_t, ClusteringUtils::NeighborInfo> ();
+  m_addressList = std::map<uint64_t, Mac48Address> ();
 }
 
 ClusteringVClient::~ClusteringVClient ()
@@ -133,6 +135,7 @@ ClusteringVClient::~ClusteringVClient ()
   m_cycleCounter = 0;
   m_neighborList = std::map<uint64_t, ClusteringUtils::NeighborInfo> ();
   m_clusterList = std::map<uint64_t, ClusteringUtils::NeighborInfo> ();
+  m_addressList = std::map<uint64_t, Mac48Address> ();
 }
 
 void
@@ -391,9 +394,10 @@ ClusteringVClient::HandleRead (Ptr<NetDevice> dev, Ptr<const Packet> pkt, uint16
               p->RemoveHeader (rcvVBeaconHeader);
               ClusteringUtils::NeighborInfo otherMobilityInfo = rcvVBeaconHeader.GetMobilityInfo ();
               UpdateCurrentMobilityInfo ();
+
+              // insert to neighbor list
               std::map<uint64_t, ClusteringUtils::NeighborInfo>::iterator itr =
                   m_neighborList.find (otherMobilityInfo.nodeId);
-
               if (itr == m_neighborList.end ())
                 {
                   if (CheckOutOfTransmission (m_currentMobilityInfo,
@@ -416,6 +420,20 @@ ClusteringVClient::HandleRead (Ptr<NetDevice> dev, Ptr<const Packet> pkt, uint16
                                << m_currentMobilityInfo.nodeId << " update node "
                                << otherMobilityInfo.nodeId << " in neighbor list");
                   itr->second = otherMobilityInfo;
+                }
+
+              // insert to address list
+              std::map<uint64_t, Mac48Address>::iterator it =
+                  m_addressList.find (otherMobilityInfo.nodeId);
+              if (it == m_addressList.end ())
+                {
+                  AddressValue addressVal = AddressValue (sender);
+                  std::string macStr = addressVal.SerializeToString (MakeAddressChecker ());
+                  Mac48Address macAddress = Mac48Address (macStr.c_str ());
+                  m_addressList.insert ({otherMobilityInfo.nodeId, macAddress});
+                  NS_LOG_INFO ("[Handle Read] Node: "
+                               << m_currentMobilityInfo.nodeId << " added address of node "
+                               << otherMobilityInfo.nodeId << " into address list");
                 }
             }
           else if (item.tid.GetName () == "ns3::ClusteringRsuBeaconHeader")
@@ -583,6 +601,13 @@ ClusteringVClient::StatusReport (void)
                                 << " Position:(" << node.positionX << "," << node.positionY << ","
                                 << node.positionZ << ") Velocity" << node.velocityX << ","
                                 << node.velocityY << "," << node.velocityZ << ")");
+    }
+  NS_LOG_UNCOND ("-----------------------------  Address List  ---------------------------------");
+  for (std::map<uint64_t, Mac48Address>::iterator it = m_addressList.begin ();
+       it != m_addressList.end (); ++it)
+    {
+      uint64_t id = it->first;
+      NS_LOG_UNCOND (" * key: " << id << " address: " << it->second);
     }
 }
 
@@ -841,11 +866,14 @@ ClusteringRsuClient::HandleRead (Ptr<NetDevice> dev, Ptr<const Packet> pkt, uint
 }
 
 bool
-ClusteringRsuClient::CheckOutOfTransmission (ClusteringUtils::RsuInfo rsuInfo, ClusteringUtils::NeighborInfo mobilityInfo)
+ClusteringRsuClient::CheckOutOfTransmission (ClusteringUtils::RsuInfo rsuInfo,
+                                             ClusteringUtils::NeighborInfo mobilityInfo)
 {
   Vector pRsu = GetPositionVector (rsuInfo);
-  Vector pV = GetPositionVector (mobilityInfo) + Vector (mobilityInfo.velocityX * m_deltaT, mobilityInfo.velocityY * m_deltaT, mobilityInfo.velocityZ * m_deltaT);
-  return ((pRsu-pV).GetLength() > 250.0);
+  Vector pV = GetPositionVector (mobilityInfo) + Vector (mobilityInfo.velocityX * m_deltaT,
+                                                         mobilityInfo.velocityY * m_deltaT,
+                                                         mobilityInfo.velocityZ * m_deltaT);
+  return ((pRsu - pV).GetLength () > 250.0);
 }
 
 void
@@ -966,7 +994,6 @@ ClusteringRsuClient::ResetCycleTime (void)
   m_clusterList.clear ();
   m_neighborList.clear ();
 }
-
 
 Vector
 ClusteringRsuClient::GetVelocityVector (ClusteringUtils::NeighborInfo mobilityInfo)
