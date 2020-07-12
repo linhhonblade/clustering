@@ -31,9 +31,10 @@ namespace ns3 {
 ----------------------------------------------------------------*/
 
 
-ClusteringVClientHelper::ClusteringVClientHelper()
+ClusteringVClientHelper::ClusteringVClientHelper(uint8_t simCase)
 {
   m_factory.SetTypeId ("ns3::ClusteringVClient");
+  m_factory.Set ("SimulationCase", UintegerValue (simCase));
 }
 
 void
@@ -82,9 +83,10 @@ ClusteringVClientHelper::InstallPriv (Ptr<Node> node) const
 ------------------ ClusteringRsuClientHelper -------------------------
 ----------------------------------------------------------------------*/
 
-ClusteringRsuClientHelper::ClusteringRsuClientHelper()
+ClusteringRsuClientHelper::ClusteringRsuClientHelper(uint8_t simCase)
 {
   m_factory.SetTypeId ("ns3::ClusteringRsuClient");
+  m_factory.Set ("SimulationCase", UintegerValue (simCase));
 }
 
 void

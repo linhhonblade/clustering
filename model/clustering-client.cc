@@ -82,7 +82,8 @@ ClusteringVClient::GetTypeId (void)
 {
   static TypeId tid = TypeId ("ns3::ClusteringVClient")
                           .SetParent<Application> ()
-                          .AddConstructor<ClusteringVClient> ();
+                          .AddConstructor<ClusteringVClient> ()
+                          .AddAttribute("SimulationCase", "The case that the simulation run", UintegerValue(1), MakeUintegerAccessor(&ClusteringVClient::m_simCase), MakeUintegerChecker<uint8_t>(1));
   return tid;
 }
 
@@ -107,24 +108,6 @@ ClusteringVClient::ClusteringVClient ()
   m_addressList = std::map<uint64_t, Mac48Address> ();
 }
 
-ClusteringVClient::ClusteringVClient (uint32_t deltaT, double tWaitMax)
-{
-  NS_LOG_FUNCTION (this);
-  m_eventElection = EventId ();
-  m_sendEvent = EventId ();
-  m_sentCounter = 0;
-  m_formationCounter = 0;
-  m_cycleCounter = 0;
-
-  m_utils = ClusteringUtils ();
-
-  m_deltaT = deltaT;
-  m_tWaitMax = tWaitMax;
-  m_waitingTime = INFINITY;
-  m_neighborList = std::map<uint64_t, ClusteringUtils::NeighborInfo> ();
-  m_clusterList = std::map<uint64_t, ClusteringUtils::NeighborInfo> ();
-  m_addressList = std::map<uint64_t, Mac48Address> ();
-}
 
 ClusteringVClient::~ClusteringVClient ()
 {
@@ -609,6 +592,10 @@ ClusteringVClient::StatusReport (void)
       uint64_t id = it->first;
       NS_LOG_UNCOND (" * key: " << id << " address: " << it->second);
     }
+  if (m_simCase == 2){
+    NS_LOG_INFO ("simcase is 2");
+  }
+  NS_LOG_UNCOND ("Simulation Case: " << m_simCase);
 }
 
 Vector
@@ -659,7 +646,8 @@ ClusteringRsuClient::GetTypeId (void)
 {
   static TypeId tid = TypeId ("ns3::ClusteringRsuClient")
                           .SetParent<Application> ()
-                          .AddConstructor<ClusteringRsuClient> ();
+                          .AddConstructor<ClusteringRsuClient> ()
+                          .AddAttribute("SimulationCase", "The case that the simulation run", UintegerValue(0), MakeUintegerAccessor(&ClusteringRsuClient::m_simCase), MakeUintegerChecker<uint8_t>(1));
   return tid;
 }
 
@@ -673,6 +661,7 @@ ClusteringRsuClient::ClusteringRsuClient ()
   m_clusterList = std::map<uint64_t, ClusteringUtils::NeighborInfo> ();
   m_addressList = std::map<uint64_t, Mac48Address> ();
   m_deltaT = 30.0;
+  // m_simCase = 0;
 }
 
 ClusteringRsuClient::~ClusteringRsuClient ()
@@ -683,6 +672,7 @@ ClusteringRsuClient::~ClusteringRsuClient ()
   m_neighborList = std::map<uint64_t, ClusteringUtils::NeighborInfo> ();
   m_clusterList = std::map<uint64_t, ClusteringUtils::NeighborInfo> ();
   m_addressList = std::map<uint64_t, Mac48Address> ();
+  m_simCase = 0;
 }
 
 void

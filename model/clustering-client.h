@@ -60,7 +60,6 @@ public:
   static TypeId GetTypeId (void);
 
   ClusteringVClient ();
-  ClusteringVClient (uint32_t deltaT, double tWaitMax);
   virtual ~ClusteringVClient ();
 
 protected:
@@ -89,6 +88,7 @@ private:
   void FormCluster (void);
 
   enum MyProcess m_process;
+  uint8_t m_simCase;
 
   EventId m_eventElection;
   EventId m_sendEvent;
@@ -171,6 +171,7 @@ private:
   double m_deltaT;
 
   uint32_t m_sentCounter;
+  uint8_t m_simCase;
 
 };
 

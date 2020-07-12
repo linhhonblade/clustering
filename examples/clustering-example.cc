@@ -86,6 +86,7 @@ main (int argc, char *argv[])
   std::string vPosfile = "position_v.txt";
   std::string rsuPosfile = "position_rsu.txt";
   std::string vMobilityModel = "ns3::ConstantPositionMobilityModel";
+  uint8_t simCase = 2;
   /*----------------------------------------------------------------------*/
 
   // bool verbose = true;
@@ -134,12 +135,12 @@ main (int argc, char *argv[])
 
   for (uint32_t u = 0; u < vNodes.GetN (); ++u)
     {
-      ClusteringVClientHelper vClient;
+      ClusteringVClientHelper vClient(simCase);
       vApps.Add (vClient.Install (vNodes.Get (u)));
     }
   for (uint32_t t = 0; t < rsuNodes.GetN (); ++t)
     {
-      ClusteringRsuClientHelper rsuClient;
+      ClusteringRsuClientHelper rsuClient(simCase);
       rsuApps.Add (rsuClient.Install (rsuNodes.Get (t)));
     }
 
