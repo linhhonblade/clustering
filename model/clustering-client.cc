@@ -936,6 +936,9 @@ ClusteringRsuClient::StatusReport (void)
       uint64_t id = it->first;
       NS_LOG_UNCOND (" * key: " << id << " address: " << it->second);
     }
+  if (m_simCase == 2){
+    NS_LOG_INFO ("simcase = 2");
+  }
 }
 
 void
