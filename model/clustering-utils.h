@@ -63,7 +63,9 @@ public:
 
   struct DataInfo
   {
-    int64_t CID;
+    uint64_t srcNode;
+    uint64_t destNode;
+    uint64_t CID;
     DataType dataType;
   };
 

@@ -80,10 +80,19 @@ NS_OBJECT_ENSURE_REGISTERED (ClusteringVClient);
 TypeId
 ClusteringVClient::GetTypeId (void)
 {
-  static TypeId tid = TypeId ("ns3::ClusteringVClient")
-                          .SetParent<Application> ()
-                          .AddConstructor<ClusteringVClient> ()
-                          .AddAttribute("SimulationCase", "The case that the simulation run", UintegerValue(1), MakeUintegerAccessor(&ClusteringVClient::m_simCase), MakeUintegerChecker<uint8_t>(1));
+  static TypeId tid =
+      TypeId ("ns3::ClusteringVClient")
+          .SetParent<Application> ()
+          .AddConstructor<ClusteringVClient> ()
+          .AddAttribute ("SimulationCase", "The case that the simulation run", UintegerValue (1),
+                         MakeUintegerAccessor (&ClusteringVClient::m_simCase),
+                         MakeUintegerChecker<uint8_t> (1))
+          .AddAttribute ("IsSender", "Is Node a Sender in DATA_EXCHANGE", BooleanValue (false),
+                         MakeBooleanAccessor (&ClusteringVClient::m_isSender),
+                         MakeBooleanChecker ())
+          .AddAttribute ("PeerNode", "The destination node", UintegerValue (0),
+                         MakeUintegerAccessor (&ClusteringVClient::m_peerNode),
+                         MakeUintegerChecker<uint64_t> (1));
   return tid;
 }
 
@@ -97,6 +106,8 @@ ClusteringVClient::ClusteringVClient ()
   m_formationCounter = 0;
   m_cycleCounter = 0;
   m_closestRsuInfo = {0, 500, 0.0, 0.0, 0.0};
+  m_nDataPacketReceived = 0;
+  m_nDataPacketSent = 0;
 
   m_utils = ClusteringUtils ();
 
@@ -108,7 +119,6 @@ ClusteringVClient::ClusteringVClient ()
   m_addressList = std::map<uint64_t, Mac48Address> ();
 }
 
-
 ClusteringVClient::~ClusteringVClient ()
 {
   NS_LOG_FUNCTION (this);
@@ -119,6 +129,8 @@ ClusteringVClient::~ClusteringVClient ()
   m_neighborList = std::map<uint64_t, ClusteringUtils::NeighborInfo> ();
   m_clusterList = std::map<uint64_t, ClusteringUtils::NeighborInfo> ();
   m_addressList = std::map<uint64_t, Mac48Address> ();
+  m_nDataPacketReceived = 0;
+  m_nDataPacketSent = 0;
 }
 
 void
@@ -201,10 +213,11 @@ ClusteringVClient::ScheduleUpdateProcess (void)
         break;
       }
       case CLUSTER_FORMATION: {
+        NS_LOG_INFO ("At time " << Simulator::Now ().GetSeconds () << "start Data exchange");
         Simulator::Cancel (m_sendEvent);
         m_process = DATA_EXCHANGE;
         Simulator::Schedule (Seconds (30.0), &ClusteringVClient::ScheduleUpdateProcess, this);
-        ScheduleTransmit (Seconds (0.1));
+        ScheduleTransmit (Seconds (1.0));
         break;
       }
       case DATA_EXCHANGE: {
@@ -240,10 +253,25 @@ void
 ClusteringVClient::ScheduleTransmit (Time dt)
 {
   NS_LOG_FUNCTION (this << dt);
-  m_sendEvent = Simulator::Schedule (dt, &ClusteringVClient::Send, this);
-  NS_LOG_DEBUG ("[Schedule Transmit] => NodeId:" << m_currentMobilityInfo.nodeId
-                                                 << " EventInfo:" << m_sendEvent.GetTs ()
-                                                 << " process: " << ToString (m_process));
+  switch (m_process)
+    {
+      case DATA_EXCHANGE: {
+        int u;
+        for (u = 0; u < 100; u++)
+          {
+            Simulator::Schedule (Seconds (0.1 * u), &ClusteringVClient::Send, this);
+          }
+        break;
+      }
+
+      default: {
+        m_sendEvent = Simulator::Schedule (dt, &ClusteringVClient::Send, this);
+        NS_LOG_DEBUG ("[Schedule Transmit] => NodeId:" << m_currentMobilityInfo.nodeId
+                                                       << " EventInfo:" << m_sendEvent.GetTs ()
+                                                       << " process: " << ToString (m_process));
+        break;
+      }
+    }
 }
 
 void
@@ -280,8 +308,8 @@ ClusteringVClient::Send (void)
         break;
       }
       case NEIGHBOR_LIST_EXCHANGE: {
-        NS_LOG_INFO ("[Send] NEIGHBOR_LIST_EXCHANGE");
-        ScheduleTransmit (Seconds (0.1));
+        // NS_LOG_INFO ("[Send] NEIGHBOR_LIST_EXCHANGE");
+        // ScheduleTransmit (Seconds (0.1));
         break;
       }
       case CLUSTER_FORMATION: {
@@ -331,10 +359,87 @@ ClusteringVClient::Send (void)
                              << " bytes to " << dest);
               }
           }
+        break;
       }
       case DATA_EXCHANGE: {
-        NS_LOG_INFO ("[Send] DATA_EXCHANGE");
-        break;
+        switch (m_simCase)
+          {
+            case 1: {
+              if (m_isSender)
+                {
+                  NS_LOG_DEBUG ("At time " << Simulator::Now ().GetSeconds () << "s node "
+                                           << m_currentMobilityInfo.nodeId << " is sender");
+                  ClusteringDataHeader dataHeader;
+                  ClusteringUtils::DataInfo dataInfo = {m_currentMobilityInfo.nodeId, m_peerNode,
+                                                        m_currentMobilityInfo.CID,
+                                                        ClusteringUtils::NOTIFICATION_EVENT};
+                  dataHeader.SetDataInfo (dataInfo);
+
+                  packet->AddHeader (dataHeader);
+
+                  std::map<uint64_t, Mac48Address>::iterator itr = m_addressList.find (m_peerNode);
+                  // NS_LOG_INFO("hello");
+                  if (itr == m_addressList.end ())
+                    {
+                      std::map<uint64_t, Mac48Address>::iterator it =
+                          m_addressList.find (m_currentMobilityInfo.CID);
+                      if (it == m_addressList.end ())
+                        {
+                          NS_LOG_DEBUG ("[Send] Node: "
+                                        << m_currentMobilityInfo.nodeId
+                                        << " cannot find the address of CH in address list");
+                        }
+                      else
+                        {
+                          const TxProfile txProfile = TxProfile (SCH1);
+                          m_device->RegisterTxProfile (txProfile);
+                          if (m_device->Send (packet, it->second, 0))
+                            {
+                              NS_LOG_INFO ("[Send] At time "
+                                           << Simulator::Now ().GetSeconds () << "s node "
+                                           << m_currentMobilityInfo.nodeId << " sent "
+                                           << packet->GetSize () << " bytes to " << it->second);
+                              ++m_nDataPacketSent;
+                              m_device->DeleteTxProfile (SCH1);
+                            }
+                          else
+                            {
+                              NS_LOG_DEBUG ("[Send] Failed to send data packet");
+                            }
+                        }
+                    }
+                  else
+                    {
+                      // Send directly to destNode
+                      const TxProfile txProfile = TxProfile (SCH1);
+                      m_device->RegisterTxProfile (txProfile);
+                      if (m_device->Send (packet, itr->second, 0))
+                        {
+                          ++m_nDataPacketSent;
+                          m_device->DeleteTxProfile (SCH1);
+                          NS_LOG_INFO ("[Send] At time "
+                                       << Simulator::Now ().GetSeconds () << "s node "
+                                       << m_currentMobilityInfo.nodeId << " sent "
+                                       << packet->GetSize () << " bytes to " << itr->second);
+                        }
+                      else
+                        {
+                          NS_LOG_DEBUG ("[Send] Node: " << m_currentMobilityInfo.nodeId
+                                                        << " failed to sent data packet");
+                        }
+                    }
+                }
+              else
+                {
+                  NS_LOG_DEBUG ("Node: " << m_currentMobilityInfo.nodeId
+                                         << " is not a sender. At time "
+                                         << Simulator::Now ().GetSeconds ());
+                }
+              break;
+            }
+          default:
+            break;
+          }
       }
       default: {
         NS_LOG_DEBUG ("[Send] Default Case");
@@ -398,10 +503,10 @@ ClusteringVClient::HandleRead (Ptr<NetDevice> dev, Ptr<const Packet> pkt, uint16
                 }
               else
                 {
-                  NS_LOG_INFO ("[Handle Read] At time "
-                               << Simulator::Now ().GetSeconds () << "s Node "
-                               << m_currentMobilityInfo.nodeId << " update node "
-                               << otherMobilityInfo.nodeId << " in neighbor list");
+                  // NS_LOG_INFO ("[Handle Read] At time "
+                  //              << Simulator::Now ().GetSeconds () << "s Node "
+                  //              << m_currentMobilityInfo.nodeId << " update node "
+                  //              << otherMobilityInfo.nodeId << " in neighbor list");
                   itr->second = otherMobilityInfo;
                 }
 
@@ -480,10 +585,10 @@ ClusteringVClient::HandleRead (Ptr<NetDevice> dev, Ptr<const Packet> pkt, uint16
                       }
                     else
                       {
-                        NS_LOG_INFO ("[Handle Read] Node "
-                                     << m_currentMobilityInfo.nodeId << "  update node "
-                                     << otherMobilityInfo.nodeId << " in neighbor list");
-                        itr->second = otherMobilityInfo;
+                        // NS_LOG_INFO ("[Handle Read] Node "
+                        //              << m_currentMobilityInfo.nodeId << "  update node "
+                        //              << otherMobilityInfo.nodeId << " in neighbor list");
+                        // itr->second = otherMobilityInfo;
                       }
                     ScheduleTransmit (Seconds (0.01 + 0.001 * m_currentMobilityInfo.nodeId));
                     break;
@@ -497,7 +602,64 @@ ClusteringVClient::HandleRead (Ptr<NetDevice> dev, Ptr<const Packet> pkt, uint16
             }
           else if (item.tid.GetName () == "ns3::ClusteringDataHeader")
             {
-              ;
+              switch (m_simCase)
+                {
+                  case 1: {
+                    ++m_nDataPacketReceived;
+                    ClusteringDataHeader dataHeader;
+                    p->RemoveHeader (dataHeader);
+                    if (m_currentMobilityInfo.nodeId == dataHeader.GetDestNode ())
+                      {
+                        NS_LOG_INFO ("[Handle Read] At time " << Simulator::Now ().GetSeconds ()
+                                                              << "s node "
+                                                              << m_currentMobilityInfo.nodeId
+                                                              << " received data packet from node "
+                                                              << dataHeader.GetSrcNode ());
+                      }
+                    else
+                      {
+                        if (m_currentMobilityInfo.state == ClusteringUtils::CH)
+                          {
+                            std::map<uint64_t, Mac48Address>::iterator itr =
+                                m_addressList.find (dataHeader.GetDestNode ());
+                            if (itr == m_addressList.end ())
+                              {
+
+                                NS_LOG_INFO ("[Handle Read] CH doesnt have address of destination "
+                                             "node, send to RSU");
+                              }
+                            else
+                              {
+                                NS_LOG_INFO ("hello");
+                                Ptr<Packet> newPacket = Create<Packet> (0);
+                                newPacket->AddHeader (dataHeader);
+                                const TxProfile txProfile = TxProfile (SCH1);
+                                m_device->RegisterTxProfile (txProfile);
+                                if (m_device->Send (newPacket, itr->second, 0))
+                                  {
+                                    NS_LOG_INFO ("[Handle Read] CH "
+                                                 << m_currentMobilityInfo.nodeId
+                                                 << " received a packet. Forward to destinatino");
+                                    ++m_nDataPacketSent;
+                                    m_device->DeleteTxProfile (SCH1);
+                                  }
+                                else
+                                  {
+                                    NS_LOG_DEBUG ("[Handle Read] Failed to forward data packet in "
+                                                  "DATA_EXCHANGE");
+                                  }
+                              }
+                          }
+                        else
+                          {
+                            NS_LOG_DEBUG ("[Handle Read] Received an anomynous packet");
+                          }
+                      }
+                    break;
+                  }
+                default:
+                  break;
+                }
             }
         }
     }
@@ -532,12 +694,12 @@ ClusteringVClient::UpdateCurrentMobilityInfo (void)
   m_currentMobilityInfo.nodeId = Application::GetNode ()->GetId ();
 
   // Position and Velocity
-  Vector p = this->GetNode ()->GetObject<ConstantPositionMobilityModel> ()->GetPosition ();
+  Vector p = this->GetNode ()->GetObject<ConstantVelocityMobilityModel> ()->GetPosition ();
   m_currentMobilityInfo.positionX = p.x;
   m_currentMobilityInfo.positionY = p.y;
   m_currentMobilityInfo.positionZ = p.z;
 
-  p = this->GetNode ()->GetObject<ConstantPositionMobilityModel> ()->GetVelocity ();
+  p = this->GetNode ()->GetObject<ConstantVelocityMobilityModel> ()->GetVelocity ();
   m_currentMobilityInfo.velocityX = p.x;
   m_currentMobilityInfo.velocityY = p.y;
   m_currentMobilityInfo.velocityZ = p.z;
@@ -560,42 +722,40 @@ ClusteringVClient::StatusReport (void)
                  << "\n last packet sent:" << m_currentMobilityInfo.ts << "s"
                  << "\n Neighbors: " << m_neighborList.size ()
                  << "\n Closest RSU node: " << m_closestRsuInfo.nodeId);
-  NS_LOG_UNCOND ("---------------------------- Neighbor List  ---------------------------------");
-  for (std::map<uint64_t, ClusteringUtils::NeighborInfo>::iterator it = m_neighborList.begin ();
-       it != m_neighborList.end (); ++it)
-    {
-      uint64_t id = it->first;
-      ClusteringUtils::NeighborInfo node = it->second;
-      NS_LOG_UNCOND (" * key: " << id << " clusterId: " << node.CID
-                                << " State:" << ToString (node.state) << " nodeId:" << node.nodeId
-                                << " Position:(" << node.positionX << "," << node.positionY << ","
-                                << node.positionZ << ") Velocity:(" << node.velocityX << ","
-                                << node.velocityY << "," << node.velocityZ
-                                << ") last packet sent:" << node.ts << "s");
-    }
-  NS_LOG_UNCOND ("-----------------------------  clusterList  ---------------------------------");
-  for (std::map<uint64_t, ClusteringUtils::NeighborInfo>::iterator it = m_clusterList.begin ();
-       it != m_clusterList.end (); ++it)
-    {
-      uint64_t id = it->first;
-      ClusteringUtils::NeighborInfo node = it->second;
-      NS_LOG_UNCOND (" * key: " << id << " clusterId: " << node.CID << " NodeState:"
-                                << ToString (node.state) << " nodeId:" << node.nodeId
-                                << " Position:(" << node.positionX << "," << node.positionY << ","
-                                << node.positionZ << ") Velocity" << node.velocityX << ","
-                                << node.velocityY << "," << node.velocityZ << ")");
-    }
-  NS_LOG_UNCOND ("-----------------------------  Address List  ---------------------------------");
-  for (std::map<uint64_t, Mac48Address>::iterator it = m_addressList.begin ();
-       it != m_addressList.end (); ++it)
-    {
-      uint64_t id = it->first;
-      NS_LOG_UNCOND (" * key: " << id << " address: " << it->second);
-    }
-  if (m_simCase == 2){
-    NS_LOG_INFO ("simcase is 2");
-  }
-  NS_LOG_UNCOND ("Simulation Case: " << m_simCase);
+  // NS_LOG_UNCOND ("---------------------------- Neighbor List  ---------------------------------");
+  // for (std::map<uint64_t, ClusteringUtils::NeighborInfo>::iterator it = m_neighborList.begin ();
+  //      it != m_neighborList.end (); ++it)
+  //   {
+  //     uint64_t id = it->first;
+  //     ClusteringUtils::NeighborInfo node = it->second;
+  //     NS_LOG_UNCOND (" * key: " << id << " clusterId: " << node.CID
+  //                               << " State:" << ToString (node.state) << " nodeId:" << node.nodeId
+  //                               << " Position:(" << node.positionX << "," << node.positionY << ","
+  //                               << node.positionZ << ") Velocity:(" << node.velocityX << ","
+  //                               << node.velocityY << "," << node.velocityZ
+  //                               << ") last packet sent:" << node.ts << "s");
+  //   }
+  // NS_LOG_UNCOND ("-----------------------------  clusterList  ---------------------------------");
+  // for (std::map<uint64_t, ClusteringUtils::NeighborInfo>::iterator it = m_clusterList.begin ();
+  //      it != m_clusterList.end (); ++it)
+  //   {
+  //     uint64_t id = it->first;
+  //     ClusteringUtils::NeighborInfo node = it->second;
+  //     NS_LOG_UNCOND (" * key: " << id << " clusterId: " << node.CID << " NodeState:"
+  //                               << ToString (node.state) << " nodeId:" << node.nodeId
+  //                               << " Position:(" << node.positionX << "," << node.positionY << ","
+  //                               << node.positionZ << ") Velocity" << node.velocityX << ","
+  //                               << node.velocityY << "," << node.velocityZ << ")");
+  //   }
+  // NS_LOG_UNCOND ("-----------------------------  Address List  ---------------------------------");
+  // for (std::map<uint64_t, Mac48Address>::iterator it = m_addressList.begin ();
+  //      it != m_addressList.end (); ++it)
+  //   {
+  //     uint64_t id = it->first;
+  //     NS_LOG_UNCOND (" * key: " << id << " address: " << it->second);
+  //   }
+  NS_LOG_UNCOND ("Number of data packets sent: " << m_nDataPacketSent);
+  NS_LOG_UNCOND ("Number of data packet received: " << m_nDataPacketReceived);
 }
 
 Vector
@@ -644,10 +804,13 @@ NS_OBJECT_ENSURE_REGISTERED (ClusteringRsuClient);
 TypeId
 ClusteringRsuClient::GetTypeId (void)
 {
-  static TypeId tid = TypeId ("ns3::ClusteringRsuClient")
-                          .SetParent<Application> ()
-                          .AddConstructor<ClusteringRsuClient> ()
-                          .AddAttribute("SimulationCase", "The case that the simulation run", UintegerValue(0), MakeUintegerAccessor(&ClusteringRsuClient::m_simCase), MakeUintegerChecker<uint8_t>(1));
+  static TypeId tid =
+      TypeId ("ns3::ClusteringRsuClient")
+          .SetParent<Application> ()
+          .AddConstructor<ClusteringRsuClient> ()
+          .AddAttribute ("SimulationCase", "The case that the simulation run", UintegerValue (0),
+                         MakeUintegerAccessor (&ClusteringRsuClient::m_simCase),
+                         MakeUintegerChecker<uint8_t> (1));
   return tid;
 }
 
@@ -807,10 +970,10 @@ ClusteringRsuClient::HandleRead (Ptr<NetDevice> dev, Ptr<const Packet> pkt, uint
                 }
               else
                 {
-                  NS_LOG_INFO ("[Handle Read] At time "
-                               << Simulator::Now ().GetSeconds () << "s RSU Node "
-                               << m_rsuInfo.nodeId << " update node " << otherMobilityInfo.nodeId
-                               << " in neighbor list");
+                  NS_LOG_DEBUG ("[Handle Read] At time "
+                                << Simulator::Now ().GetSeconds () << "s RSU Node "
+                                << m_rsuInfo.nodeId << " update node " << otherMobilityInfo.nodeId
+                                << " in neighbor list");
                   itr->second = otherMobilityInfo;
                 }
 
@@ -823,9 +986,9 @@ ClusteringRsuClient::HandleRead (Ptr<NetDevice> dev, Ptr<const Packet> pkt, uint
                   std::string macStr = addressVal.SerializeToString (MakeAddressChecker ());
                   Mac48Address macAddress = Mac48Address (macStr.c_str ());
                   m_addressList.insert ({otherMobilityInfo.nodeId, macAddress});
-                  NS_LOG_INFO ("[Handle Read] Node: "
-                               << m_rsuInfo.nodeId << " added address of node "
-                               << otherMobilityInfo.nodeId << " into address list");
+                  NS_LOG_DEBUG ("[Handle Read] Node: "
+                                << m_rsuInfo.nodeId << " added address of node "
+                                << otherMobilityInfo.nodeId << " into address list");
                 }
             }
           else if (item.tid.GetName () == "ns3::ClusteringRsuBeaconHeader")
@@ -855,10 +1018,10 @@ ClusteringRsuClient::HandleRead (Ptr<NetDevice> dev, Ptr<const Packet> pkt, uint
                 }
               else
                 {
-                  NS_LOG_INFO ("[Handle Read] At time "
-                               << Simulator::Now ().GetSeconds () << "s RSU Node "
-                               << m_rsuInfo.nodeId << " update node " << otherMobilityInfo.nodeId
-                               << " in neighbor list");
+                  NS_LOG_DEBUG ("[Handle Read] At time "
+                                << Simulator::Now ().GetSeconds () << "s RSU Node "
+                                << m_rsuInfo.nodeId << " update node " << otherMobilityInfo.nodeId
+                                << " in neighbor list");
                   itr->second = otherMobilityInfo;
                 }
             }
@@ -936,9 +1099,7 @@ ClusteringRsuClient::StatusReport (void)
       uint64_t id = it->first;
       NS_LOG_UNCOND (" * key: " << id << " address: " << it->second);
     }
-  if (m_simCase == 2){
-    NS_LOG_INFO ("simcase = 2");
-  }
+  NS_LOG_UNCOND ("-----------------------------  Address List  ---------------------------------");
 }
 
 void

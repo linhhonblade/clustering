@@ -105,8 +105,12 @@ private:
   uint32_t m_formationCounter; //!< Counter for sent cluster formation
   uint32_t m_cycleCounter; //!< Countere for cycle number
   uint32_t m_deltaT;
+  bool m_isSender;
   double m_waitingTime;
   double m_tWaitMax;
+  uint64_t m_peerNode;
+  uint32_t m_nDataPacketSent;
+  uint32_t m_nDataPacketReceived;
 
   ClusteringUtils m_utils;
   Ptr<WaveNetDevice> m_device;
