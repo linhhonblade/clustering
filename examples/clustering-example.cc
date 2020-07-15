@@ -15,7 +15,7 @@
 #include "ns3/net-device-container.h"
 #include "ns3/application-container.h"
 #include "ns3/clustering-client-helper.h"
-
+#include "ns3/mobility-module.h"
 using namespace ns3;
 
 NS_LOG_COMPONENT_DEFINE ("ClusteringExample");
@@ -80,12 +80,25 @@ main (int argc, char *argv[])
   /*----------------------------------------------------------------------*/
 
   /*---------------------- Simulation Default Values ---------------------*/
-  double simTime = 10.0;
-  uint16_t numberOfVehicles = 3;
+  double simTime = 30.0;
+
+  // Case 1
+  // uint16_t numberOfVehicles = 3;
+  // uint16_t numberOfRsu = 1;
+  // std::string vPosfile = "position_v.txt";
+  // std::string rsuPosfile = "position_rsu.txt";
+
+  // Case 2
+  uint16_t numberOfVehicles = 17;
   uint16_t numberOfRsu = 1;
-  std::string vPosfile = "position_v.txt";
-  std::string rsuPosfile = "position_rsu.txt";
-  std::string vMobilityModel = "ns3::ConstantPositionMobilityModel";
+  std::string vPosfile = "position_v_2.txt";
+  std::string rsuPosfile = "position_rsu_2.txt";
+
+  std::string rsuMobilityModel = "ns3::ConstantPositionMobilityModel";
+  std::string vMobilityModel = "ns3::ConstantVelocityMobilityModel";
+  uint8_t simCase = 1;
+  double minVelocity = 10.27;
+  double maxVelocity = 11.94;
   /*----------------------------------------------------------------------*/
 
   // bool verbose = true;
@@ -97,6 +110,8 @@ main (int argc, char *argv[])
   cmd.AddValue ("numberOfRsu", "Number of Rsu in simulation", numberOfRsu);
   cmd.AddValue ("vPosfile", "name of txt file containing positions of vNodes", vPosfile);
   cmd.AddValue ("rsuPosfile", "name of txt file containing position of rsuNodes", rsuPosfile);
+  cmd.AddValue ("MinVelocity", "Minimum velocity of nodes in m/s", minVelocity);
+  cmd.AddValue ("MaxVelocity", "Maximum velocity of nodes m/s", maxVelocity);
 
   NS_LOG_INFO ("");
   NS_LOG_INFO ("|---"
@@ -114,10 +129,10 @@ main (int argc, char *argv[])
 
   // Create  vNodes
   PosInfo posInfo = PosInfo (vPosfile);
-  NodeContainer vNodes = posInfo.GetNodeContainer (3, 4.0, numberOfVehicles, vMobilityModel);
+  NodeContainer vNodes = posInfo.GetNodeContainer (3, 4.0, numberOfVehicles, vMobilityModel, maxVelocity, minVelocity);
   // Create rsuNodes
   posInfo = PosInfo (rsuPosfile);
-  NodeContainer rsuNodes = posInfo.GetNodeContainer (1, 0.0, numberOfRsu, vMobilityModel);
+  NodeContainer rsuNodes = posInfo.GetNodeContainer (1, 0.0, numberOfRsu, rsuMobilityModel, 0, 0);
 
   // Setup MAC and PHY layer
   YansWifiChannelHelper waveChannel = YansWifiChannelHelper::Default ();
@@ -129,17 +144,25 @@ main (int argc, char *argv[])
   NetDeviceContainer vDevices = waveHelper.Install (wavePhy, waveMac, vNodes);
   NetDeviceContainer rsuDevices = waveHelper.Install (wavePhy, waveMac, rsuNodes);
 
+
+
+
   ApplicationContainer vApps;
   ApplicationContainer rsuApps;
 
   for (uint32_t u = 0; u < vNodes.GetN (); ++u)
     {
-      ClusteringVClientHelper vClient;
+      // install application
+      ClusteringVClientHelper vClient(simCase);
+      if (u == 11){
+        vClient.SetAttribute("IsSender", BooleanValue(true));
+        vClient.SetAttribute("PeerNode", UintegerValue(13));
+      }
       vApps.Add (vClient.Install (vNodes.Get (u)));
     }
   for (uint32_t t = 0; t < rsuNodes.GetN (); ++t)
     {
-      ClusteringRsuClientHelper rsuClient;
+      ClusteringRsuClientHelper rsuClient(simCase);
       rsuApps.Add (rsuClient.Install (rsuNodes.Get (t)));
     }
 

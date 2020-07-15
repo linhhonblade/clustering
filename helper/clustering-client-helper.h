@@ -36,7 +36,7 @@ namespace ns3 {
 class ClusteringVClientHelper
 {
 public:
-  ClusteringVClientHelper ();
+  ClusteringVClientHelper (uint8_t simCase);
 
   /**
 	 * Helper function used to set the underlying application attributes.
@@ -90,7 +90,7 @@ private:
 class ClusteringRsuClientHelper
 {
 public:
-  ClusteringRsuClientHelper ();
+  ClusteringRsuClientHelper (uint8_t simCase);
 
   /**
 	 * Helper function used to set the underlying application attributes.

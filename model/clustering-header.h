@@ -223,6 +223,15 @@ public:
      */
   ClusteringUtils::DataInfo GetDataInfo (void);
 
+   void SetSrcNode (uint64_t srcNode);
+   uint64_t GetSrcNode (void);
+   void SetDestNode (uint64_t destNode);
+   uint64_t GetDestNode (void);
+   void SetCID (uint64_t CID);
+   uint64_t GetCID (void);
+   void SetDataType (ClusteringUtils::DataType dataType);
+   ClusteringUtils::DataType GetDataType (void);
+
   /**
      * \brief Get the type ID.
      * \return the object TypeId
@@ -235,8 +244,11 @@ public:
   virtual uint32_t Deserialize (Buffer::Iterator start);
 
 private:
-  uint64_t m_ts; //!< Timestamp
-  ClusteringUtils::DataInfo m_dataInfo; //!< Incident Information
+  int64_t m_ts; //!< Timestamp
+  uint64_t m_srcNode;
+  uint64_t m_destNode;
+  uint64_t m_CID;
+  ClusteringUtils::DataType m_dataType;
 };
 
 /**

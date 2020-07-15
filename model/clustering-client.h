@@ -60,7 +60,6 @@ public:
   static TypeId GetTypeId (void);
 
   ClusteringVClient ();
-  ClusteringVClient (uint32_t deltaT, double tWaitMax);
   virtual ~ClusteringVClient ();
 
 protected:
@@ -89,6 +88,7 @@ private:
   void FormCluster (void);
 
   enum MyProcess m_process;
+  uint8_t m_simCase;
 
   EventId m_eventElection;
   EventId m_sendEvent;
@@ -96,6 +96,7 @@ private:
 
   std::map<uint64_t, ClusteringUtils::NeighborInfo> m_clusterList;
   std::map<uint64_t, ClusteringUtils::NeighborInfo> m_neighborList;
+  std::map<uint64_t, Mac48Address> m_addressList;
   ClusteringUtils::NeighborInfo m_currentMobilityInfo;
   Address m_peerIncident;
   ClusteringUtils::RsuInfo m_closestRsuInfo;
@@ -104,8 +105,12 @@ private:
   uint32_t m_formationCounter; //!< Counter for sent cluster formation
   uint32_t m_cycleCounter; //!< Countere for cycle number
   uint32_t m_deltaT;
+  bool m_isSender;
   double m_waitingTime;
   double m_tWaitMax;
+  uint64_t m_peerNode;
+  uint32_t m_nDataPacketSent;
+  uint32_t m_nDataPacketReceived;
 
   ClusteringUtils m_utils;
   Ptr<WaveNetDevice> m_device;
@@ -155,17 +160,25 @@ private:
   void StatusReport (void);
   void ScheduleUpdateProcess (void);
   void ResetCycleTime (void);
+  bool CheckOutOfTransmission (ClusteringUtils::RsuInfo rsuInfo, ClusteringUtils::NeighborInfo mobilityInfo);
+  Vector GetVelocityVector (ClusteringUtils::NeighborInfo mobilityInfo);
+  Vector GetPositionVector (ClusteringUtils::RsuInfo rsuInfo);
+  Vector GetPositionVector (ClusteringUtils::NeighborInfo mobilityInfo);
 
   std::map<uint64_t, ClusteringUtils::NeighborInfo> m_neighborList;
   std::map<uint64_t, ClusteringUtils::NeighborInfo> m_clusterList;
+  std::map<uint64_t, Mac48Address> m_addressList;
   ClusteringUtils::RsuInfo m_rsuInfo;
   EventId m_sendEvent;
   Ptr<WaveNetDevice> m_device;
   enum MyProcess m_process;
+  double m_deltaT;
 
   uint32_t m_sentCounter;
+  uint8_t m_simCase;
 
 };
+
 
 } // namespace ns3
 

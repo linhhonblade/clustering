@@ -382,6 +382,21 @@ ClusteringFormClusterHeader::Deserialize (Buffer::Iterator start)
 /////////////////////////////////////////////////////////////////////
 NS_OBJECT_ENSURE_REGISTERED (ClusteringDataHeader);
 
+TypeId
+ClusteringDataHeader::GetTypeId (void)
+{
+  static TypeId tid = TypeId ("ns3::ClusteringDataHeader")
+                          .SetParent<Header> ()
+                          .AddConstructor<ClusteringDataHeader> ();
+  return tid;
+}
+
+TypeId
+ClusteringDataHeader::GetInstanceTypeId (void) const
+{
+  return GetTypeId ();
+}
+
 ClusteringDataHeader::ClusteringDataHeader () : m_ts (Simulator::Now ().GetTimeStep ())
 {
   NS_LOG_FUNCTION (this);
@@ -403,44 +418,84 @@ void
 ClusteringDataHeader::SetDataInfo (ClusteringUtils::DataInfo dataInfo)
 {
   NS_LOG_FUNCTION (this << dataInfo.CID);
-  m_dataInfo = dataInfo;
+  m_destNode = dataInfo.destNode;
+  m_srcNode = dataInfo.srcNode;
+  m_CID = dataInfo.CID;
+  m_dataType = dataInfo.dataType;
 }
 
 ClusteringUtils::DataInfo
 ClusteringDataHeader::GetDataInfo (void)
 {
   NS_LOG_FUNCTION (this);
-  return m_dataInfo;
+  return ClusteringUtils::DataInfo {m_srcNode, m_destNode, m_CID, m_dataType};
 }
 
-TypeId
-ClusteringDataHeader::GetTypeId (void)
+void
+ClusteringDataHeader::SetSrcNode (uint64_t srcNode)
 {
-  static TypeId tid = TypeId ("ns3::ClusteringDataHeader")
-                          .SetParent<Header> ()
-                          .AddConstructor<ClusteringDataHeader> ();
-  return tid;
+  NS_LOG_FUNCTION (this << srcNode);
+  m_srcNode = srcNode;
+}
+uint64_t
+ClusteringDataHeader::GetSrcNode (void)
+{
+  NS_LOG_FUNCTION (this);
+  return m_srcNode;
 }
 
-TypeId
-ClusteringDataHeader::GetInstanceTypeId (void) const
+void
+ClusteringDataHeader::SetDestNode (uint64_t destNode)
 {
-  return GetTypeId ();
+  NS_LOG_FUNCTION (this << destNode);
+  m_destNode = destNode;
+}
+uint64_t
+ClusteringDataHeader::GetDestNode (void)
+{
+  NS_LOG_FUNCTION (this);
+  return m_destNode;
+}
+
+void
+ClusteringDataHeader::SetCID (uint64_t CID)
+{
+  NS_LOG_FUNCTION (this << CID);
+  m_CID = CID;
+}
+uint64_t
+ClusteringDataHeader::GetCID (void)
+{
+  NS_LOG_FUNCTION (this);
+  return m_CID;
+}
+
+void
+ClusteringDataHeader::SetDataType (ClusteringUtils::DataType dataType)
+{
+  m_dataType = dataType;
+}
+
+ClusteringUtils::DataType
+ClusteringDataHeader::GetDataType (void)
+{
+  NS_LOG_FUNCTION (this);
+  return m_dataType;
 }
 
 void
 ClusteringDataHeader::Print (std::ostream &os) const
 {
   NS_LOG_FUNCTION (this << &os);
-  os << "(time=" << TimeStep (m_ts).GetSeconds () << " ClusterId=" << m_dataInfo.CID
-     << " IncidentType =" << m_dataInfo.dataType << ")";
+  os << "(time=" << TimeStep (m_ts).GetSeconds () << " ClusterId=" << m_CID
+     << " IncidentType =" << m_dataType << ")";
 }
 
 uint32_t
 ClusteringDataHeader::GetSerializedSize (void) const
 {
   NS_LOG_FUNCTION (this);
-  return sizeof (uint64_t) + sizeof (ClusteringUtils::DataInfo);
+  return sizeof (int64_t) + sizeof (ClusteringUtils::DataInfo);
 }
 
 void
@@ -452,8 +507,10 @@ ClusteringDataHeader::Serialize (Buffer::Iterator start) const
   i.WriteHtonU64 (m_ts);
 
   // Write DataInfo structure
-  i.WriteHtonU64 (m_dataInfo.CID);
-  i.WriteHtonU16 (m_dataInfo.dataType);
+  i.WriteHtonU64 (m_srcNode);
+  i.WriteHtonU64 (m_destNode);
+  i.WriteHtonU64 (m_CID);
+  i.WriteHtonU16 (m_dataType);
 }
 
 uint32_t
@@ -464,8 +521,10 @@ ClusteringDataHeader::Deserialize (Buffer::Iterator start)
   Buffer::Iterator i = start;
   m_ts = i.ReadNtohU64 ();
 
-  m_dataInfo.CID = i.ReadNtohU64 ();
-  m_dataInfo.dataType = static_cast<ClusteringUtils::DataType> (i.ReadNtohU16 ());
+  m_srcNode = i.ReadNtohU64 ();
+  m_destNode = i.ReadNtohU64 ();
+  m_CID = i.ReadNtohU64 ();
+  m_dataType = static_cast<ClusteringUtils::DataType> (i.ReadNtohU16 ());
 
   return GetSerializedSize ();
 }
