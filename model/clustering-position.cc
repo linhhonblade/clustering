@@ -120,6 +120,7 @@ NodeContainer
 PosInfo::GetNodeContainer (uint32_t lanes, double lane_width, uint32_t nodeNum,
                            const std::string &mobilityModel, double maxVelocity, double minVelocity)
 {
+  // RngSeedManager::SetSeed (rngSeed);
   NodeContainer nodes = NodeContainer ();
   nodes.Create (nodeNum);
   MobilityHelper mobility;

@@ -24,6 +24,7 @@
 #include "clustering-utils.h"
 #include "ns3/log.h"
 
+
 NS_LOG_COMPONENT_DEFINE ("ClusteringHeader");
 
 namespace ns3 {
@@ -124,10 +125,18 @@ ClusteringBeaconHeader::Serialize (Buffer::Iterator start) const
   i.WriteHtonU64 (m_ts);
   i.WriteHtonU64 (m_nodeId);
   i.WriteHtonU64 (m_CID);
-  i.WriteHtonU64 (m_positionX);
+  std::string posX = std::to_string(m_positionX);
+  char tmpP[posX.length()+1];
+  std::strcpy(tmpP, posX.c_str());
+  i.Write((uint8_t*)tmpP, std::strlen(tmpP) + 1);
+  // i.WriteHtonU64 (m_positionX);
   i.WriteHtonU64 (m_positionY);
   i.WriteHtonU64 (m_positionZ);
-  i.WriteHtonU64 (m_velocityX);
+  std::string velX = std::to_string(m_velocityX);
+  char tmpV[velX.length()+1];
+  std::strcpy(tmpV, velX.c_str());
+  i.Write((uint8_t*)tmpV, std::strlen(tmpV) + 1);
+  // i.WriteHtonU64 (m_velocityX);
   i.WriteHtonU64 (m_velocityY);
   i.WriteHtonU64 (m_velocityZ);
   i.WriteHtonU16 (m_state);
@@ -139,14 +148,39 @@ ClusteringBeaconHeader::Deserialize (Buffer::Iterator start)
   NS_LOG_INFO (this << &start);
 
   Buffer::Iterator i = start;
+
   m_seq = i.ReadNtohU64 ();
   m_ts = i.ReadNtohU64 ();
   m_nodeId = i.ReadNtohU64 ();
   m_CID = i.ReadNtohU64 ();
-  m_positionX = i.ReadNtohU64 ();
+  uint8_t c;
+  uint32_t len = 0;
+  Buffer::Iterator it = i;
+  do {
+    c = i.ReadU8 ();
+    len++;
+  } while (c!=0);
+  char tmpP [len];
+  it.Read((uint8_t*)tmpP, len);
+  std::string posX = tmpP;
+  m_positionX = std::stod(posX);
+  // m_positionX = i.ReadNtohU64 ();
   m_positionY = i.ReadNtohU64 ();
   m_positionZ = i.ReadNtohU64 ();
-  m_velocityX = i.ReadNtohU64 ();
+
+  it = i;
+  len = 0;
+
+  do {
+    c = i.ReadU8();
+    len++;
+  } while (c!=0);
+  char tmpV [len];
+  it.Read((uint8_t*)tmpV, len);
+  std::string velX = tmpV;
+  m_velocityX = std::stod(velX);
+
+  // m_velocityX = i.ReadNtohU64 ();
   m_velocityY = i.ReadNtohU64 ();
   m_velocityZ = i.ReadNtohU64 ();
   m_state = static_cast<ClusteringUtils::NodeState> (i.ReadNtohU16 ());

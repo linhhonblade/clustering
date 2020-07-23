@@ -43,8 +43,11 @@
 
 namespace ns3 {
 
+// static const std::string ClusterProcessName[ClusteringVClient::CURRENT_PROCESS] = {
+//     "BEACON_EXCHANGE", "NEIGHBOR_LIST_EXCHANGE", "CLUSTER_FORMATION", "DATA_EXCHANGE"};
+
 static const std::string ClusterProcessName[ClusteringVClient::CURRENT_PROCESS] = {
-    "BEACON_EXCHANGE", "NEIGHBOR_LIST_EXCHANGE", "CLUSTER_FORMATION", "DATA_EXCHANGE"};
+    "BEACON_EXCHANGE", "CLUSTER_FORMATION", "DATA_EXCHANGE", "SET_UP"};
 
 static const std::string &
 ToString (ClusteringVClient::MyProcess process)
@@ -171,17 +174,13 @@ ClusteringVClient::StartApplication (void)
   UpdateCurrentMobilityInfo ();
   ScheduleUpdateProcess ();
 
-  ScheduleTransmit (Seconds (0.0 + 0.001 * m_currentMobilityInfo.nodeId));
+  ScheduleTransmit (Seconds (0.0 + 0.0005 * m_currentMobilityInfo.nodeId));
 }
 
 void
 ClusteringVClient::StartListening (void)
 {
   NS_LOG_FUNCTION (this);
-  std::cout << "Number of devices in node " << Application::GetNode ()->GetId () << ":"
-            << Application::GetNode ()->GetNDevices ()
-            << " Device type: " << Application::GetNode ()->GetDevice (0)->GetTypeId ()
-            << std::endl;
   m_device->SetReceiveCallback (MakeCallback (&ClusteringVClient::HandleRead, this));
 }
 
@@ -193,13 +192,11 @@ ClusteringVClient::ScheduleUpdateProcess (void)
     {
       case BEACON_EXCHANGE: {
         // Simulator::Cancel (m_eventBeaconExchange);
-        Simulator::Cancel (m_sendEvent);
-        m_process = ClusteringVClient::NEIGHBOR_LIST_EXCHANGE;
-        Simulator::Schedule (Seconds (1.0), &ClusteringVClient::ScheduleUpdateProcess, this);
-        ScheduleTransmit (Seconds (0.1));
-        break;
-      }
-      case NEIGHBOR_LIST_EXCHANGE: {
+        // Simulator::Cancel (m_sendEvent);
+        // m_process = ClusteringVClient::NEIGHBOR_LIST_EXCHANGE;
+        // Simulator::Schedule (Seconds (1.0), &ClusteringVClient::ScheduleUpdateProcess, this);
+        // ScheduleTransmit (Seconds (0.1));
+        // break;
         Simulator::Cancel (m_sendEvent);
         m_process = CLUSTER_FORMATION;
         Simulator::Schedule (Seconds (2.0), &ClusteringVClient::ScheduleUpdateProcess, this);
@@ -212,12 +209,25 @@ ClusteringVClient::ScheduleUpdateProcess (void)
         ScheduleTransmit (Seconds (m_waitingTime));
         break;
       }
+      // case NEIGHBOR_LIST_EXCHANGE: {
+      // Simulator::Cancel (m_sendEvent);
+      // m_process = CLUSTER_FORMATION;
+      // Simulator::Schedule (Seconds (2.0), &ClusteringVClient::ScheduleUpdateProcess, this);
+      // m_waitingTime = GetTwait ();
+      // NS_LOG_INFO ("[FORM_CLUSTER] START ELECTION => At time "
+      //              << Simulator::Now ().GetSeconds () << " s node "
+      //              << m_currentMobilityInfo.nodeId << " has waiting time " << m_waitingTime
+      //              << "s");
+
+      // ScheduleTransmit (Seconds (m_waitingTime));
+      // break;
+      // }
       case CLUSTER_FORMATION: {
-        NS_LOG_INFO ("At time " << Simulator::Now ().GetSeconds () << "start Data exchange");
+        NS_LOG_DEBUG ("At time " << Simulator::Now ().GetSeconds () << " start Data exchange");
         Simulator::Cancel (m_sendEvent);
         m_process = DATA_EXCHANGE;
         Simulator::Schedule (Seconds (30.0), &ClusteringVClient::ScheduleUpdateProcess, this);
-        ScheduleTransmit (Seconds (1.0));
+        ScheduleTransmit (Seconds (0.0));
         break;
       }
       case DATA_EXCHANGE: {
@@ -247,6 +257,11 @@ ClusteringVClient::ResetCycleTime ()
   m_neighborList.clear ();
   m_currentMobilityInfo.state = ClusteringUtils::STANDALONE;
   m_waitingTime = INFINITY;
+  m_nDataPacketReceived = 0;
+  m_nDataPacketSent = 0;
+  m_sentCounter = 0;
+  m_sendEvent.Cancel ();
+  m_addressList.clear ();
 }
 
 void
@@ -256,11 +271,12 @@ ClusteringVClient::ScheduleTransmit (Time dt)
   switch (m_process)
     {
       case DATA_EXCHANGE: {
-        int u;
-        for (u = 0; u < 100; u++)
-          {
-            Simulator::Schedule (Seconds (0.1 * u), &ClusteringVClient::Send, this);
-          }
+        // int u;
+        // for (u = 0; u < 100; u++)
+        //   {
+        //     Simulator::Schedule (Seconds (0.1 * u), &ClusteringVClient::Send, this);
+        //   }
+        m_sendEvent = Simulator::Schedule (dt, &ClusteringVClient::Send, this);
         break;
       }
 
@@ -283,7 +299,7 @@ ClusteringVClient::Send (void)
                                     << " process: " << ToString (m_process));
   NS_ASSERT (m_sendEvent.IsExpired ());
   Ptr<Packet> packet = Create<Packet> (0);
-  UpdateCurrentMobilityInfo ();
+  // UpdateCurrentMobilityInfo ();
   switch (m_process)
     {
       case BEACON_EXCHANGE: {
@@ -298,21 +314,22 @@ ClusteringVClient::Send (void)
           {
             ++m_sentCounter;
             m_device->DeleteTxProfile (SCH1);
-            NS_LOG_INFO ("[Send] BEACON_EXCHANGE => At time "
-                         << Simulator::Now ().GetSeconds () << "s node "
-                         << m_currentMobilityInfo.nodeId << " sent " << packet->GetSize ()
-                         << " bytes to " << dest);
+            NS_LOG_DEBUG ("[Send] BEACON_EXCHANGE => At time "
+                          << Simulator::Now ().GetSeconds () << "s node "
+                          << m_currentMobilityInfo.nodeId << " sent " << packet->GetSize ()
+                          << " bytes to " << dest);
           }
 
         ScheduleTransmit (Seconds (0.1));
         break;
       }
-      case NEIGHBOR_LIST_EXCHANGE: {
-        // NS_LOG_INFO ("[Send] NEIGHBOR_LIST_EXCHANGE");
-        // ScheduleTransmit (Seconds (0.1));
-        break;
-      }
+      // case NEIGHBOR_LIST_EXCHANGE: {
+      //   // NS_LOG_INFO ("[Send] NEIGHBOR_LIST_EXCHANGE");
+      //   // ScheduleTransmit (Seconds (0.1));
+      //   break;
+      // }
       case CLUSTER_FORMATION: {
+        // UpdateCurrentMobilityInfo ();
         if (m_currentMobilityInfo.state == ClusteringUtils::STANDALONE)
           {
             m_currentMobilityInfo.state = ClusteringUtils::CH;
@@ -330,10 +347,10 @@ ClusteringVClient::Send (void)
               {
                 ++m_sentCounter;
                 m_device->DeleteTxProfile (SCH1);
-                NS_LOG_INFO ("[Send] FORM_CLUSTER => At time "
-                             << Simulator::Now ().GetSeconds () << "s node "
-                             << m_currentMobilityInfo.nodeId << " sent " << packet->GetSize ()
-                             << " bytes to " << dest);
+                NS_LOG_DEBUG ("[Send] FORM_CLUSTER => At time "
+                              << Simulator::Now ().GetSeconds () << "s node "
+                              << m_currentMobilityInfo.nodeId << " sent " << packet->GetSize ()
+                              << " bytes to " << dest);
               }
             else
               {
@@ -353,10 +370,10 @@ ClusteringVClient::Send (void)
               {
                 ++m_sentCounter;
                 m_device->DeleteTxProfile (SCH1);
-                NS_LOG_INFO ("[Send] BEACON_EXCHANGE in FORM_CLUSTER At "
-                             << Simulator::Now ().GetSeconds () << "s node "
-                             << m_currentMobilityInfo.nodeId << " sent " << packet->GetSize ()
-                             << " bytes to " << dest);
+                NS_LOG_DEBUG ("[Send] BEACON_EXCHANGE in FORM_CLUSTER At "
+                              << Simulator::Now ().GetSeconds () << "s node "
+                              << m_currentMobilityInfo.nodeId << " sent " << packet->GetSize ()
+                              << " bytes to " << dest);
               }
           }
         break;
@@ -395,10 +412,10 @@ ClusteringVClient::Send (void)
                           m_device->RegisterTxProfile (txProfile);
                           if (m_device->Send (packet, it->second, 0))
                             {
-                              NS_LOG_INFO ("[Send] At time "
-                                           << Simulator::Now ().GetSeconds () << "s node "
-                                           << m_currentMobilityInfo.nodeId << " sent "
-                                           << packet->GetSize () << " bytes to " << it->second);
+                              NS_LOG_DEBUG ("[Send] At time "
+                                            << Simulator::Now ().GetSeconds () << "s node "
+                                            << m_currentMobilityInfo.nodeId << " sent "
+                                            << packet->GetSize () << " bytes to " << it->second);
                               ++m_nDataPacketSent;
                               m_device->DeleteTxProfile (SCH1);
                             }
@@ -428,9 +445,11 @@ ClusteringVClient::Send (void)
                                                         << " failed to sent data packet");
                         }
                     }
+                  ScheduleTransmit (Seconds (0.1));
                 }
               else
                 {
+                  m_sendEvent.Cancel ();
                   NS_LOG_DEBUG ("Node: " << m_currentMobilityInfo.nodeId
                                          << " is not a sender. At time "
                                          << Simulator::Now ().GetSeconds ());
@@ -481,7 +500,10 @@ ClusteringVClient::HandleRead (Ptr<NetDevice> dev, Ptr<const Packet> pkt, uint16
               ClusteringBeaconHeader rcvVBeaconHeader;
               p->RemoveHeader (rcvVBeaconHeader);
               ClusteringUtils::NeighborInfo otherMobilityInfo = rcvVBeaconHeader.GetMobilityInfo ();
-              UpdateCurrentMobilityInfo ();
+              if ((Application::GetNode()->GetId() == 3) && (otherMobilityInfo.nodeId == 6)){
+                std::cout << "p3 = " << m_currentMobilityInfo.positionX << std::endl << "p6 = " << otherMobilityInfo.positionX << std::endl << "v6 = " << otherMobilityInfo.velocityX << std::endl << "v3 = " << m_currentMobilityInfo.velocityX << std::endl;
+              }
+              // UpdateCurrentMobilityInfo ();
 
               // insert to neighbor list
               std::map<uint64_t, ClusteringUtils::NeighborInfo>::iterator itr =
@@ -532,10 +554,10 @@ ClusteringVClient::HandleRead (Ptr<NetDevice> dev, Ptr<const Packet> pkt, uint16
               if ((m_closestRsuInfo.nodeId == 500) | (m_closestRsuInfo.nodeId == otherInfo.nodeId))
                 {
                   m_closestRsuInfo = otherInfo;
-                  NS_LOG_INFO ("[Update closest RSU] At time " << Simulator::Now ().GetSeconds ()
-                                                               << " rsu node " << otherInfo.nodeId
-                                                               << " became closest RSU of node "
-                                                               << m_currentMobilityInfo.nodeId);
+                  NS_LOG_DEBUG ("[Update closest RSU] At time " << Simulator::Now ().GetSeconds ()
+                                                                << " rsu node " << otherInfo.nodeId
+                                                                << " became closest RSU of node "
+                                                                << m_currentMobilityInfo.nodeId);
                 }
               else
                 {
@@ -558,39 +580,84 @@ ClusteringVClient::HandleRead (Ptr<NetDevice> dev, Ptr<const Packet> pkt, uint16
               switch (m_currentMobilityInfo.state)
                 {
                   case ClusteringUtils::STANDALONE: {
-                    m_sendEvent.Cancel ();
+                    // m_sendEvent.Cancel ();
                     ClusteringFormClusterHeader formClusterHeader;
                     p->RemoveHeader (formClusterHeader);
                     ClusteringUtils::NeighborInfo otherMobilityInfo =
                         formClusterHeader.GetMobilityInfo ();
 
-                    m_currentMobilityInfo.state = ClusteringUtils::CM;
-                    m_currentMobilityInfo.CID = otherMobilityInfo.CID;
+                    // m_currentMobilityInfo.state = ClusteringUtils::CM;
+                    // m_currentMobilityInfo.CID = otherMobilityInfo.CID;
 
-                    NS_LOG_INFO (
-                        "[Handle Read] At "
-                        << Simulator::Now ().GetSeconds () << "s node "
-                        << m_currentMobilityInfo.nodeId
-                        << " received a Form CLuster packet: Quit Election and join cluster "
-                        << otherMobilityInfo.CID);
+                    // NS_LOG_INFO (
+                    //     "[Handle Read] At "
+                    //     << Simulator::Now ().GetSeconds () << "s node "
+                    //     << m_currentMobilityInfo.nodeId
+                    //     << " received a Form CLuster packet: Quit Election and join cluster "
+                    //     << otherMobilityInfo.CID);
 
                     std::map<uint64_t, ClusteringUtils::NeighborInfo>::iterator itr =
                         m_neighborList.find (otherMobilityInfo.nodeId);
                     if (itr == m_neighborList.end ())
                       {
-                        NS_LOG_INFO ("[Handle Read] Node: " << m_currentMobilityInfo.nodeId
-                                                            << " Insert packet: "
-                                                            << otherMobilityInfo.nodeId);
-                        m_neighborList.insert ({otherMobilityInfo.nodeId, otherMobilityInfo});
+                        NS_LOG_DEBUG ("[Handle Read] Node: " << m_currentMobilityInfo.nodeId
+                                                             << " Insert packet: "
+                                                             << otherMobilityInfo.nodeId);
+                        // m_neighborList.insert ({otherMobilityInfo.nodeId, otherMobilityInfo});
                       }
                     else
                       {
+                        m_sendEvent.Cancel ();
+
+                        m_currentMobilityInfo.state = ClusteringUtils::CM;
+                        m_currentMobilityInfo.CID = otherMobilityInfo.CID;
+
+                        NS_LOG_INFO (
+                            "[Handle Read] At "
+                            << Simulator::Now ().GetSeconds () << "s node "
+                            << m_currentMobilityInfo.nodeId
+                            << " received a Form CLuster packet: Quit Election and join cluster "
+                            << otherMobilityInfo.CID);
                         // NS_LOG_INFO ("[Handle Read] Node "
                         //              << m_currentMobilityInfo.nodeId << "  update node "
                         //              << otherMobilityInfo.nodeId << " in neighbor list");
-                        // itr->second = otherMobilityInfo;
+                        itr->second = otherMobilityInfo;
                       }
-                    ScheduleTransmit (Seconds (0.01 + 0.001 * m_currentMobilityInfo.nodeId));
+                    ScheduleTransmit (Seconds (0.001 * m_currentMobilityInfo.nodeId));
+                    break;
+                  }
+                  case ClusteringUtils::CM: {
+                    ClusteringFormClusterHeader formClusterHeader;
+                    p->RemoveHeader (formClusterHeader);
+                    ClusteringUtils::NeighborInfo otherMobilityInfo =
+                        formClusterHeader.GetMobilityInfo ();
+                    std::map<uint64_t, ClusteringUtils::NeighborInfo>::iterator itr =
+                        m_neighborList.find (otherMobilityInfo.nodeId);
+                    if (itr == m_neighborList.end ())
+                      {
+                        // m_neighborList.insert ({otherMobilityInfo.nodeId, otherMobilityInfo});
+                      }
+                    else
+                      {
+                        itr->second = otherMobilityInfo;
+                      }
+                    break;
+                  }
+                  case ClusteringUtils::CH: {
+                    ClusteringFormClusterHeader formClusterHeader;
+                    p->RemoveHeader (formClusterHeader);
+                    ClusteringUtils::NeighborInfo otherMobilityInfo =
+                        formClusterHeader.GetMobilityInfo ();
+                    std::map<uint64_t, ClusteringUtils::NeighborInfo>::iterator itr =
+                        m_neighborList.find (otherMobilityInfo.nodeId);
+                    if (itr == m_neighborList.end ())
+                      {
+                        // m_neighborList.insert ({otherMobilityInfo.nodeId, otherMobilityInfo});
+                      }
+                    else
+                      {
+                        itr->second = otherMobilityInfo;
+                      }
                     break;
                   }
                   default: {
@@ -670,12 +737,13 @@ bool
 ClusteringVClient::CheckOutOfTransmission (ClusteringUtils::NeighborInfo a,
                                            ClusteringUtils::NeighborInfo b)
 {
+  double commRange = 50.0;
   // Position of a and b after deltaT secs
   Vector pa = GetPositionVector (a) +
               Vector (a.velocityX * m_deltaT, a.velocityY * m_deltaT, a.velocityZ * m_deltaT);
   Vector pb = GetPositionVector (b) +
               Vector (b.velocityX * m_deltaT, b.velocityY * m_deltaT, b.velocityZ * m_deltaT);
-  if ((pb - pa).GetLength () < 250.0)
+  if ((pb - pa).GetLength () < commRange)
     {
       return false;
     }
@@ -708,7 +776,7 @@ ClusteringVClient::UpdateCurrentMobilityInfo (void)
 void
 ClusteringVClient::StatusReport (void)
 {
-
+  UpdateCurrentMobilityInfo ();
   NS_LOG_UNCOND (
       "\n\n-----------------------------------------------------------------------------");
   NS_LOG_UNCOND ("[StatusReport] => At time "
@@ -722,19 +790,19 @@ ClusteringVClient::StatusReport (void)
                  << "\n last packet sent:" << m_currentMobilityInfo.ts << "s"
                  << "\n Neighbors: " << m_neighborList.size ()
                  << "\n Closest RSU node: " << m_closestRsuInfo.nodeId);
-  // NS_LOG_UNCOND ("---------------------------- Neighbor List  ---------------------------------");
-  // for (std::map<uint64_t, ClusteringUtils::NeighborInfo>::iterator it = m_neighborList.begin ();
-  //      it != m_neighborList.end (); ++it)
-  //   {
-  //     uint64_t id = it->first;
-  //     ClusteringUtils::NeighborInfo node = it->second;
-  //     NS_LOG_UNCOND (" * key: " << id << " clusterId: " << node.CID
-  //                               << " State:" << ToString (node.state) << " nodeId:" << node.nodeId
-  //                               << " Position:(" << node.positionX << "," << node.positionY << ","
-  //                               << node.positionZ << ") Velocity:(" << node.velocityX << ","
-  //                               << node.velocityY << "," << node.velocityZ
-  //                               << ") last packet sent:" << node.ts << "s");
-  //   }
+  NS_LOG_UNCOND ("---------------------------- Neighbor List  ---------------------------------");
+  for (std::map<uint64_t, ClusteringUtils::NeighborInfo>::iterator it = m_neighborList.begin ();
+       it != m_neighborList.end (); ++it)
+    {
+      uint64_t id = it->first;
+      ClusteringUtils::NeighborInfo node = it->second;
+      NS_LOG_UNCOND (" * key: " << id << " clusterId: " << node.CID
+                                << " State:" << ToString (node.state) << " nodeId:" << node.nodeId
+                                << " Position:(" << node.positionX << "," << node.positionY << ","
+                                << node.positionZ << ") Velocity:(" << node.velocityX << ","
+                                << node.velocityY << "," << node.velocityZ
+                                << ") last packet sent:" << node.ts << "s");
+    }
   // NS_LOG_UNCOND ("-----------------------------  clusterList  ---------------------------------");
   // for (std::map<uint64_t, ClusteringUtils::NeighborInfo>::iterator it = m_clusterList.begin ();
   //      it != m_clusterList.end (); ++it)
@@ -779,6 +847,7 @@ ClusteringVClient::GetPositionVector (ClusteringUtils::RsuInfo rsuInfo)
 double
 ClusteringVClient::GetTwait (void)
 {
+  double commRange = 50.0;
   double distanceIdx;
   if (m_closestRsuInfo.nodeId == 500)
     {
@@ -788,7 +857,7 @@ ClusteringVClient::GetTwait (void)
     {
       Vector p = GetPositionVector (m_currentMobilityInfo);
       Vector pRsu = GetPositionVector (m_closestRsuInfo);
-      distanceIdx = (250.0 - (p - pRsu).GetLength ()) / 250.0;
+      distanceIdx = (50.0 - (p - pRsu).GetLength ()) / commRange;
     }
   double centrailityIdx = 1 - 1 / (m_neighborList.size () + 1);
   double connectivityIdx = (centrailityIdx + distanceIdx) / 2;
@@ -870,7 +939,7 @@ ClusteringRsuClient::StartApplication (void)
   m_device->StartSch (schInfo);
   UpdateRsuInfo ();
   ScheduleUpdateProcess ();
-  ScheduleTransmit (Seconds (0.1 - 0.001 * m_rsuInfo.nodeId));
+  ScheduleTransmit (Seconds (0.1 + 0.001 * m_rsuInfo.nodeId));
 }
 
 void
@@ -918,9 +987,9 @@ ClusteringRsuClient::Send (void)
         ScheduleTransmit (Seconds (0.1));
         break;
       }
-      case NEIGHBOR_LIST_EXCHANGE: {
-        break;
-      }
+      // case NEIGHBOR_LIST_EXCHANGE: {
+      //   break;
+      // }
       case CLUSTER_FORMATION: {
         break;
       }
@@ -1123,13 +1192,12 @@ ClusteringRsuClient::ScheduleUpdateProcess (void)
     {
       case BEACON_EXCHANGE: {
         // Simulator::Cancel (m_eventBeaconExchange);
-        Simulator::Cancel (m_sendEvent);
-        m_process = ClusteringRsuClient::NEIGHBOR_LIST_EXCHANGE;
-        Simulator::Schedule (Seconds (1.0), &ClusteringRsuClient::ScheduleUpdateProcess, this);
-        ScheduleTransmit (Seconds (0.1));
-        break;
-      }
-      case NEIGHBOR_LIST_EXCHANGE: {
+        // Simulator::Cancel (m_sendEvent);
+        // m_process = ClusteringRsuClient::NEIGHBOR_LIST_EXCHANGE;
+        // Simulator::Schedule (Seconds (1.0), &ClusteringRsuClient::ScheduleUpdateProcess, this);
+        // ScheduleTransmit (Seconds (0.1));
+        // break;
+
         NS_LOG_INFO ("update cluster formation process");
         // Simulator::Cancel (m_eventNeighborExchange);
         Simulator::Cancel (m_sendEvent);
@@ -1137,6 +1205,14 @@ ClusteringRsuClient::ScheduleUpdateProcess (void)
         Simulator::Schedule (Seconds (2.0), &ClusteringRsuClient::ScheduleUpdateProcess, this);
         break;
       }
+      // case NEIGHBOR_LIST_EXCHANGE: {
+      // NS_LOG_INFO ("update cluster formation process");
+      // // Simulator::Cancel (m_eventNeighborExchange);
+      // Simulator::Cancel (m_sendEvent);
+      // m_process = CLUSTER_FORMATION;
+      // Simulator::Schedule (Seconds (2.0), &ClusteringRsuClient::ScheduleUpdateProcess, this);
+      // break;
+      // }
       case CLUSTER_FORMATION: {
 
         // Simulator::Cancel (m_eventElection);

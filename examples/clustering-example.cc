@@ -80,25 +80,29 @@ main (int argc, char *argv[])
   /*----------------------------------------------------------------------*/
 
   /*---------------------- Simulation Default Values ---------------------*/
-  double simTime = 30.0;
+  double simTime = 1.1;
+  uint64_t sender = 9;
+  uint64_t receiver = 8;
+  double lane_distance = 4.0;
 
   // Case 1
-  // uint16_t numberOfVehicles = 3;
-  // uint16_t numberOfRsu = 1;
+  uint16_t numberOfVehicles = 20;
+  uint16_t numberOfRsu = 2;
   // std::string vPosfile = "position_v.txt";
   // std::string rsuPosfile = "position_rsu.txt";
 
   // Case 2
-  uint16_t numberOfVehicles = 17;
-  uint16_t numberOfRsu = 1;
+  // uint16_t numberOfVehicles = 17;
+  // uint16_t numberOfRsu = 1;
   std::string vPosfile = "position_v_2.txt";
   std::string rsuPosfile = "position_rsu_2.txt";
 
   std::string rsuMobilityModel = "ns3::ConstantPositionMobilityModel";
   std::string vMobilityModel = "ns3::ConstantVelocityMobilityModel";
   uint8_t simCase = 1;
-  double minVelocity = 10.27;
-  double maxVelocity = 11.94;
+  double minVelocity = 10.3535;
+  double maxVelocity = 11.8686;
+  uint32_t rngSeed = 1;
   /*----------------------------------------------------------------------*/
 
   // bool verbose = true;
@@ -112,6 +116,9 @@ main (int argc, char *argv[])
   cmd.AddValue ("rsuPosfile", "name of txt file containing position of rsuNodes", rsuPosfile);
   cmd.AddValue ("MinVelocity", "Minimum velocity of nodes in m/s", minVelocity);
   cmd.AddValue ("MaxVelocity", "Maximum velocity of nodes m/s", maxVelocity);
+  cmd.AddValue ("RngSeed", "seed", rngSeed);
+
+  cmd.Parse (argc, argv);
 
   NS_LOG_INFO ("");
   NS_LOG_INFO ("|---"
@@ -125,11 +132,25 @@ main (int argc, char *argv[])
                << " vPosfile -> " << vPosfile << " ---|\n");
   NS_LOG_INFO ("|---"
                << " rsuPosfile -> " << rsuPosfile << " ---|\n");
-  /*----------------------------------------------------------------------*/
+  NS_LOG_INFO ("|---"
+               << " minVelocity -> " << minVelocity << " ---|\n");
+  NS_LOG_INFO ("|---"
+               << " maxVelocity -> " << maxVelocity << " ---|\n");
+  NS_LOG_INFO ("|---"
+               << " rngSeed -> " << rngSeed << " ---|\n");
+
+  /*------------------------------] At 1.16099s node 18 received a Form CLuster packet: Quit Election and join cluster 6
+[Handle Read] At 1.16099s node 2 received a Form CLuster packet: Quit Election and join cluster 6
+[Handle Read] At 1.16099s node 0 received a Form CLuster packet: Quit Election and join cluster 6
+[Handle Read] At 1.16099s node 19 received a Form CLuster packet: Quit Election and join cluster 6
+[Handle Read] At 1.16099s node 12 received a Form CLuster packet: Quit Election and join cluster 6
+[Handle Read] At 1.16099s node 5 received a Form CLuster packet: Quit Election and join cluster 6
+[Handle Read] At 1.16099s node 9 received a Form CLuster packet: Quit Election and join cluster 6----------------------------------------*/
 
   // Create  vNodes
   PosInfo posInfo = PosInfo (vPosfile);
-  NodeContainer vNodes = posInfo.GetNodeContainer (3, 4.0, numberOfVehicles, vMobilityModel, maxVelocity, minVelocity);
+  NodeContainer vNodes =
+      posInfo.GetNodeContainer (3, lane_distance, numberOfVehicles, vMobilityModel, maxVelocity, minVelocity);
   // Create rsuNodes
   posInfo = PosInfo (rsuPosfile);
   NodeContainer rsuNodes = posInfo.GetNodeContainer (1, 0.0, numberOfRsu, rsuMobilityModel, 0, 0);
@@ -144,25 +165,24 @@ main (int argc, char *argv[])
   NetDeviceContainer vDevices = waveHelper.Install (wavePhy, waveMac, vNodes);
   NetDeviceContainer rsuDevices = waveHelper.Install (wavePhy, waveMac, rsuNodes);
 
-
-
-
   ApplicationContainer vApps;
   ApplicationContainer rsuApps;
 
   for (uint32_t u = 0; u < vNodes.GetN (); ++u)
     {
       // install application
-      ClusteringVClientHelper vClient(simCase);
-      if (u == 11){
-        vClient.SetAttribute("IsSender", BooleanValue(true));
-        vClient.SetAttribute("PeerNode", UintegerValue(13));
-      }
+      ClusteringVClientHelper vClient (simCase);
+      if (u == sender)
+        {
+          vClient.SetAttribute ("IsSender", BooleanValue (true));
+          vClient.SetAttribute ("PeerNode", UintegerValue (receiver));
+
+        }
       vApps.Add (vClient.Install (vNodes.Get (u)));
     }
   for (uint32_t t = 0; t < rsuNodes.GetN (); ++t)
     {
-      ClusteringRsuClientHelper rsuClient(simCase);
+      ClusteringRsuClientHelper rsuClient (simCase);
       rsuApps.Add (rsuClient.Install (rsuNodes.Get (t)));
     }
 

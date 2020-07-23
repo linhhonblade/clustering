@@ -45,9 +45,16 @@ class ClusteringVClient : public Application
 {
 public:
 
-  enum MyProcess {
+  // enum MyProcess {
+  //   BEACON_EXCHANGE = 0,
+  //   NEIGHBOR_LIST_EXCHANGE,
+  //   CLUSTER_FORMATION,
+  //   DATA_EXCHANGE,
+  //   SET_UP,
+  //   CURRENT_PROCESS
+  // };
+    enum MyProcess {
     BEACON_EXCHANGE = 0,
-    NEIGHBOR_LIST_EXCHANGE,
     CLUSTER_FORMATION,
     DATA_EXCHANGE,
     SET_UP,
@@ -125,9 +132,17 @@ class ClusteringRsuClient : public Application
 {
 public:
 
-  enum MyProcess {
+  // enum MyProcess {
+  //   BEACON_EXCHANGE = 0,
+  //   NEIGHBOR_LIST_EXCHANGE,
+  //   CLUSTER_FORMATION,
+  //   DATA_EXCHANGE,
+  //   SET_UP,
+  //   CURRENT_PROCESS
+  // };
+
+    enum MyProcess {
     BEACON_EXCHANGE = 0,
-    NEIGHBOR_LIST_EXCHANGE,
     CLUSTER_FORMATION,
     DATA_EXCHANGE,
     SET_UP,
