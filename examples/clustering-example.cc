@@ -80,13 +80,13 @@ main (int argc, char *argv[])
   /*----------------------------------------------------------------------*/
 
   /*---------------------- Simulation Default Values ---------------------*/
-  double simTime = 1.1;
+  double simTime = 10.1;
   uint64_t sender = 9;
   uint64_t receiver = 8;
   double lane_distance = 4.0;
 
   // Case 1
-  uint16_t numberOfVehicles = 20;
+  uint16_t numberOfVehicles = 5;
   uint16_t numberOfRsu = 2;
   // std::string vPosfile = "position_v.txt";
   // std::string rsuPosfile = "position_rsu.txt";
@@ -94,14 +94,17 @@ main (int argc, char *argv[])
   // Case 2
   // uint16_t numberOfVehicles = 17;
   // uint16_t numberOfRsu = 1;
-  std::string vPosfile = "position_v_2.txt";
-  std::string rsuPosfile = "position_rsu_2.txt";
+  std::string vPosfile = "position_v.txt";
+  std::string rsuPosfile = "position_rsu_3.txt";
 
   std::string rsuMobilityModel = "ns3::ConstantPositionMobilityModel";
   std::string vMobilityModel = "ns3::ConstantVelocityMobilityModel";
+  // std::string vMobilityModel = "ns3::ConstantPositionMobilityModel";
   uint8_t simCase = 1;
   double minVelocity = 10.3535;
   double maxVelocity = 11.8686;
+  // double minVelocity = 0;
+  // double maxVelocity = 0;
   uint32_t rngSeed = 1;
   /*----------------------------------------------------------------------*/
 
@@ -149,8 +152,8 @@ main (int argc, char *argv[])
 
   // Create  vNodes
   PosInfo posInfo = PosInfo (vPosfile);
-  NodeContainer vNodes =
-      posInfo.GetNodeContainer (3, lane_distance, numberOfVehicles, vMobilityModel, maxVelocity, minVelocity);
+  NodeContainer vNodes = posInfo.GetNodeContainer (3, lane_distance, numberOfVehicles,
+                                                   vMobilityModel, maxVelocity, minVelocity);
   // Create rsuNodes
   posInfo = PosInfo (rsuPosfile);
   NodeContainer rsuNodes = posInfo.GetNodeContainer (1, 0.0, numberOfRsu, rsuMobilityModel, 0, 0);
@@ -176,7 +179,6 @@ main (int argc, char *argv[])
         {
           vClient.SetAttribute ("IsSender", BooleanValue (true));
           vClient.SetAttribute ("PeerNode", UintegerValue (receiver));
-
         }
       vApps.Add (vClient.Install (vNodes.Get (u)));
     }

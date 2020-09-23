@@ -138,7 +138,7 @@ PosInfo::GetNodeContainer (uint32_t lanes, double lane_width, uint32_t nodeNum,
 
   if (mobilityModel == "ns3::ConstantVelocityMobilityModel")
     {
-      NS_LOG_INFO ("hello");
+      // NS_LOG_INFO ("hello");
 
       // Setup RandomVariable object
       Ptr<UniformRandomVariable> rand = CreateObject<UniformRandomVariable> ();
@@ -148,7 +148,7 @@ PosInfo::GetNodeContainer (uint32_t lanes, double lane_width, uint32_t nodeNum,
               nodes.Get (i)->GetObject<ConstantVelocityMobilityModel> ();
           mob->SetVelocity (Vector (rand->GetValue (maxVelocity, minVelocity), 0.0, 0.0));
           // mob->SetVelocity (Vector (5.0, 0.0, 0.0));
-          NS_LOG_INFO ("done");
+          // NS_LOG_INFO ("done");
         }
     }
 

@@ -114,7 +114,7 @@ ClusteringVClient::ClusteringVClient ()
 
   m_utils = ClusteringUtils ();
 
-  m_deltaT = 30;
+  m_deltaT = 10;
   m_tWaitMax = 1.0;
   m_waitingTime = INFINITY;
   m_neighborList = std::map<uint64_t, ClusteringUtils::NeighborInfo> ();
@@ -174,7 +174,7 @@ ClusteringVClient::StartApplication (void)
   UpdateCurrentMobilityInfo ();
   ScheduleUpdateProcess ();
 
-  ScheduleTransmit (Seconds (0.0 + 0.0005 * m_currentMobilityInfo.nodeId));
+  ScheduleTransmit (Seconds (0.0 + 0.001 * m_currentMobilityInfo.nodeId));
 }
 
 void
@@ -226,7 +226,7 @@ ClusteringVClient::ScheduleUpdateProcess (void)
         NS_LOG_DEBUG ("At time " << Simulator::Now ().GetSeconds () << " start Data exchange");
         Simulator::Cancel (m_sendEvent);
         m_process = DATA_EXCHANGE;
-        Simulator::Schedule (Seconds (30.0), &ClusteringVClient::ScheduleUpdateProcess, this);
+        Simulator::Schedule (Seconds (m_deltaT), &ClusteringVClient::ScheduleUpdateProcess, this);
         ScheduleTransmit (Seconds (0.0));
         break;
       }
@@ -236,6 +236,7 @@ ClusteringVClient::ScheduleUpdateProcess (void)
         ResetCycleTime ();
         m_process = BEACON_EXCHANGE;
         Simulator::Schedule (Seconds (1.0), &ClusteringVClient::ScheduleUpdateProcess, this);
+        ScheduleTransmit(Seconds (0.001*m_currentMobilityInfo.nodeId));
         break;
       }
       case SET_UP: {
@@ -262,6 +263,7 @@ ClusteringVClient::ResetCycleTime ()
   m_sentCounter = 0;
   m_sendEvent.Cancel ();
   m_addressList.clear ();
+  UpdateCurrentMobilityInfo ();
 }
 
 void
@@ -692,8 +694,9 @@ ClusteringVClient::HandleRead (Ptr<NetDevice> dev, Ptr<const Packet> pkt, uint16
                             if (itr == m_addressList.end ())
                               {
 
-                                NS_LOG_INFO ("[Handle Read] CH doesnt have address of destination "
+                                NS_LOG_DEBUG ("[Handle Read] CH doesnt have address of destination "
                                              "node, send to RSU");
+
                               }
                             else
                               {
@@ -892,7 +895,7 @@ ClusteringRsuClient::ClusteringRsuClient ()
   m_neighborList = std::map<uint64_t, ClusteringUtils::NeighborInfo> ();
   m_clusterList = std::map<uint64_t, ClusteringUtils::NeighborInfo> ();
   m_addressList = std::map<uint64_t, Mac48Address> ();
-  m_deltaT = 30.0;
+  m_deltaT = 10.0;
   // m_simCase = 0;
 }
 
@@ -1111,7 +1114,7 @@ ClusteringRsuClient::CheckOutOfTransmission (ClusteringUtils::RsuInfo rsuInfo,
   Vector pV = GetPositionVector (mobilityInfo) + Vector (mobilityInfo.velocityX * m_deltaT,
                                                          mobilityInfo.velocityY * m_deltaT,
                                                          mobilityInfo.velocityZ * m_deltaT);
-  return ((pRsu - pV).GetLength () > 250.0);
+  return ((pRsu - pV).GetLength () > 50.0);
 }
 
 void
@@ -1198,7 +1201,7 @@ ClusteringRsuClient::ScheduleUpdateProcess (void)
         // ScheduleTransmit (Seconds (0.1));
         // break;
 
-        NS_LOG_INFO ("update cluster formation process");
+        // NS_LOG_INFO ("update cluster formation process");
         // Simulator::Cancel (m_eventNeighborExchange);
         Simulator::Cancel (m_sendEvent);
         m_process = CLUSTER_FORMATION;
@@ -1218,7 +1221,8 @@ ClusteringRsuClient::ScheduleUpdateProcess (void)
         // Simulator::Cancel (m_eventElection);
         Simulator::Cancel (m_sendEvent);
         m_process = DATA_EXCHANGE;
-        Simulator::Schedule (Seconds (30.0), &ClusteringRsuClient::ScheduleUpdateProcess, this);
+        Simulator::Schedule (Seconds (m_deltaT), &ClusteringRsuClient::ScheduleUpdateProcess, this);
+
         break;
       }
       case DATA_EXCHANGE: {
@@ -1227,6 +1231,7 @@ ClusteringRsuClient::ScheduleUpdateProcess (void)
         ResetCycleTime ();
         m_process = BEACON_EXCHANGE;
         Simulator::Schedule (Seconds (1.0), &ClusteringRsuClient::ScheduleUpdateProcess, this);
+        ScheduleTransmit (Seconds (0.001*m_rsuInfo.nodeId));
         break;
       }
       case SET_UP: {
@@ -1246,6 +1251,7 @@ ClusteringRsuClient::ResetCycleTime (void)
   std::cout << "This is ResetCycleTime function" << std::endl;
   m_clusterList.clear ();
   m_neighborList.clear ();
+
 }
 
 Vector
